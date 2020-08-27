@@ -90,6 +90,8 @@ double mu2e.detectorSystemZ0 = 10171.;   // mm  G4BL: (17730-7292=9801 mm)
 // Form of DS field: 0 is full field;
 //                   1 is full upstream, const downstream;
 //                   2 is const throughout
+// Change DSExtension to DSSweepExtension to get sweeper magnet magnetic field.
+// Confirm not putting it in via other config files (should be a boolean toggle).
 int detSolFieldForm = 0;
 vector<string> bfield.innerMaps = {
   "BFieldMaps/Mau13/DSMap.header",
@@ -98,7 +100,7 @@ vector<string> bfield.innerMaps = {
   "BFieldMaps/Mau13/TSdMap.header",
   "BFieldMaps/Mau13/PStoDumpAreaMap.header",
   "BFieldMaps/Mau13/ProtonDumpAreaMap.header",
-  "BFieldMaps/Mau13/DSExtension.header"
+  "BFieldMaps/Mau13/DSSweepExtension.header"
 };
 
 // Value of the uniform magnetic field with the DS volume (only for
@@ -122,7 +124,8 @@ vector<string> bfield.outerMaps = {
   "BFieldMaps/Mau9/ExtMonUCIInternal1AreaMap.header",
   "BFieldMaps/Mau9/ExtMonUCIInternal2AreaMap.header",
   "BFieldMaps/Mau9/ExtMonUCIAreaMap.header",
-  "BFieldMaps/Mau9/PSAreaMap.header"
+  "BFieldMaps/Mau13/PSAreaMap.header",
+  "BFieldMaps/Mau13/WorldMap.header"
 };
 
 // This scale factor is of limited use.
