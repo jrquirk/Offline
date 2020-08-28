@@ -29,6 +29,10 @@
 #include "art_root_io/TFileService.h"
 #include "art/Framework/Core/ModuleMacros.h"
 #include "canvas/Persistency/Common/TriggerResults.h"
+#include "fhiclcpp/types/Atom.h"
+#include "fhiclcpp/types/OptionalAtom.h"
+#include "fhiclcpp/types/Table.h"
+#include "fhiclcpp/types/OptionalSequence.h"
 
 // ROOT incldues
 #include "Rtypes.h"
@@ -69,6 +73,7 @@
 #include "TrkDiag/inc/RecoQualInfo.hh"
 // CRV info
 #include "CRVAnalysis/inc/CRVAnalysis.hh"
+#include "MCDataProducts/inc/SimParticleTimeMap.hh"
 
 // C++ includes.
 #include <iostream>
@@ -86,6 +91,18 @@ namespace mu2e {
 
   public:
 
+    struct BranchOptConfig {
+      using Name=fhicl::Name;
+      using Comment=fhicl::Comment;
+      fhicl::Atom<bool> fillmc{Name("fillMC"), Comment("Switch to turn on filling of MC information for this set of tracks"), false};
+      fhicl::Atom<bool> fillhits{Name("fillHits"), Comment("Switch to turn on filling of hit-level information for this set of tracks"), false};
+      fhicl::OptionalAtom<std::string> trkqual{Name("trkqual"), Comment("TrkQualCollection input tag to be written out (use prefix if fcl parameter suffix is defined)")};
+      fhicl::Atom<bool> filltrkqual{Name("fillTrkQual"), Comment("Switch to turn on filling of the full TrkQualInfo for this set of tracks"), false};
+      fhicl::OptionalAtom<std::string> trkpid{Name("trkpid"), Comment("TrkCaloHitPIDCollection input tag to be written out (use prefix if fcl parameter suffix is defined)")};
+      fhicl::Atom<bool> filltrkpid{Name("fillTrkPID"), Comment("Switch to turn on filling of the full TrkPIDInfo for this set of tracks"), false};
+      fhicl::Atom<bool> required{Name("required"), Comment("True/false if you require this type of track in the event"), false};
+    };
+
     struct BranchConfig {
       using Name=fhicl::Name;
       using Comment=fhicl::Comment;
@@ -93,11 +110,7 @@ namespace mu2e {
       fhicl::Atom<std::string> input{Name("input"), Comment("KalSeedCollection input tag (use prefix if fcl parameter suffix is defined)")};
       fhicl::Atom<std::string> branch{Name("branch"), Comment("Name of output branch")};
       fhicl::Atom<std::string> suffix{Name("suffix"), Comment("Fit suffix (e.g. DeM)"), ""};
-      fhicl::Atom<bool> fillmc{Name("fillMC"), Comment("Switch to turn on filling of MC information for this set of tracks"), false};
-      fhicl::OptionalAtom<std::string> trkqual{Name("trkqual"), Comment("TrkQualCollection input tag to be written out (use prefix if fcl parameter suffix is defined)")};
-      fhicl::Atom<bool> filltrkqual{Name("fillTrkQual"), Comment("Switch to turn on filling of the full TrkQualInfo for this set of tracks"), false};
-      fhicl::OptionalAtom<std::string> trkpid{Name("trkpid"), Comment("TrkCaloHitPIDCollection input tag to be written out (use prefix if fcl parameter suffix is defined)")};
-      fhicl::Atom<bool> filltrkpid{Name("fillTrkPID"), Comment("Switch to turn on filling of the full TrkPIDInfo for this set of tracks"), false};
+      fhicl::Table<BranchOptConfig> options{Name("options"), Comment("Optional arguments for a branch")};
     };
 
     struct Config {
@@ -112,19 +125,33 @@ namespace mu2e {
       fhicl::Atom<art::InputTag> PBIwtTag{Name("PBIWeightTag"), Comment("Tag for PBIWeight") ,art::InputTag()};
       fhicl::Atom<std::string> crvCoincidenceModuleLabel{Name("CrvCoincidenceModuleLabel"), Comment("CrvCoincidenceModuleLabel")};
       fhicl::Atom<std::string> crvCoincidenceMCModuleLabel{Name("CrvCoincidenceMCModuleLabel"), Comment("CrvCoincidenceMCModuleLabel")};
-      fhicl::Atom<bool> fillmc{Name("FillMCInfo"),true};
+      fhicl::Atom<std::string> crvRecoPulseLabel{Name("CrvRecoPulseLabel"), Comment("CrvRecoPulseLabel")};
+      fhicl::Atom<std::string> crvStepPointMCLabel{Name("CrvStepPointMCLabel"), Comment("CrvStepPointMCLabel")};
+      fhicl::Atom<std::string> simParticleLabel{Name("SimParticleLabel"), Comment("SimParticleLabel")};
+      fhicl::Atom<std::string> mcTrajectoryLabel{Name("MCTrajectoryLabel"), Comment("MCTrajectoryLabel")};
+      fhicl::Atom<double> crvPlaneY{Name("CrvPlaneY"),2751.485};  //y of center of the top layer of the CRV-T counters
+      fhicl::Table<SimParticleTimeOffset::Config> timeOffsets{ Name("TimeOffsets"), Comment("Time maps") };
+      fhicl::Atom<std::string> crvWaveformsModuleLabel{ Name("CrvWaveformsModuleLabel"), Comment("CrvWaveformsModuleLabel")};
+      fhicl::Atom<std::string> crvDigiModuleLabel{ Name("CrvDigiModuleLabel"), Comment("CrvDigiModuleLabel")};
+      fhicl::Atom<bool> fillmc{Name("FillMCInfo"),Comment("Global switch to turn on/off MC info"),true};
       fhicl::Atom<bool> pempty{Name("ProcessEmptyEvents"),false};
       fhicl::Atom<bool> crv{Name("AnalyzeCRV"),false};
+      fhicl::Atom<bool> crvpulses{Name("AnalyzeCRVPulses"),false};
       fhicl::Atom<bool> helices{Name("FillHelixInfo"),false};
       fhicl::Atom<bool> filltrkqual{Name("FillTrkQualInfo"),false};
       fhicl::Atom<bool> filltrkpid{Name("FillTrkPIDInfo"),false};
       fhicl::Atom<bool> filltrig{Name("FillTriggerInfo"),false};
+      fhicl::Atom<std::string> trigpathsuffix{Name("TriggerPathSuffix"), "_trigger"}; // all trigger paths have this in the name
       fhicl::Atom<int> diag{Name("diagLevel"),1};
+      fhicl::Atom<bool> fillhits{Name("FillHitInfo"),Comment("Global switch to turn on/off hit-level info"), false};
       fhicl::Atom<int> debug{Name("debugLevel"),0};
       fhicl::Atom<art::InputTag> primaryParticleTag{Name("PrimaryParticleTag"), Comment("Tag for PrimaryParticle"), art::InputTag()};
       fhicl::Atom<art::InputTag> kalSeedMCTag{Name("KalSeedMCAssns"), Comment("Tag for KalSeedMCAssn"), art::InputTag()};
       fhicl::Atom<art::InputTag> caloClusterMCTag{Name("CaloClusterMCAssns"), Comment("Tag for CaloClusterMCAssns"), art::InputTag()};
       fhicl::Table<InfoMCStructHelper::Config> infoMCStructHelper{Name("InfoMCStructHelper"), Comment("Configuration for the InfoMCStructHelper")};
+      fhicl::Atom<bool> fillmcxtra{Name("FillExtraMCSteps"),false};
+      fhicl::OptionalSequence<art::InputTag> mcxtratags{Name("ExtraMCStepCollectionTags"), Comment("Input tags for any other StepPointMCCollections you want written out")};
+      fhicl::OptionalSequence<std::string> mcxtrasuffix{Name("ExtraMCStepBranchSuffix"), Comment("The suffix to the branch for the extra MC steps (e.g. putting \"ipa\" will give a branch \"demcipa\")")};
     };
     typedef art::EDAnalyzer::Table<Config> Parameters;
 
@@ -171,6 +198,7 @@ namespace mu2e {
     // trigger information
     unsigned _trigbits;
     TH1F* _trigbitsh; // plot of trigger bits: just an example
+    std::map<size_t,unsigned> _tmap; // map between path and trigger ID.  ID should come from trigger itself FIXME!
     // MC truth branches (inputs)
     art::Handle<PrimaryParticle> _pph;
     art::Handle<KalSeedMCAssns> _ksmcah;
@@ -184,10 +212,12 @@ namespace mu2e {
     std::vector<GenInfo> _allMCGenTIs, _allMCPriTIs;
     std::vector<TrkInfoMCStep> _allMCEntTIs, _allMCMidTIs, _allMCXitTIs;
     std::vector<CaloClusterInfoMC> _allMCTCHIs;
-    // hit level info branches (only for candidate at the moment)
-    std::vector<TrkStrawHitInfo> _detsh;
-    std::vector<TrkStrawMatInfo> _detsm;
-    std::vector<TrkStrawHitInfoMC> _detshmc;
+
+    // hit level info branches 
+    std::vector<std::vector<TrkStrawHitInfo>> _allTSHIs;
+    std::vector<std::vector<TrkStrawMatInfo>> _allTSMIs;
+    std::vector<std::vector<TrkStrawHitInfoMC>> _allTSHIMCs;
+
     // event weights
     std::vector<art::Handle<EventWeight> > _wtHandles;
     EventWeightInfo _wtinfo;
@@ -195,6 +225,12 @@ namespace mu2e {
     std::vector<CrvHitInfoReco> _crvinfo;
     int _bestcrv;
     std::vector<CrvHitInfoMC> _crvinfomc;
+    CrvSummaryReco _crvsummary;
+    CrvSummaryMC   _crvsummarymc;
+    std::vector<CrvPlaneInfoMC> _crvinfomcplane;
+    std::vector<CrvPulseInfoReco> _crvpulseinfo;
+    std::vector<CrvWaveformInfo> _crvwaveforminfo;
+    std::vector<CrvHitInfoMC> _crvpulseinfomc;
     // helices
     HelixInfo _hinfo;
     // struct helpers
@@ -217,6 +253,7 @@ namespace mu2e {
   TrackAnalysisReco::TrackAnalysisReco(const Parameters& conf):
     art::EDAnalyzer(conf),
     _conf(conf()),
+    _trigbitsh(0),
     _infoMCStructHelper(conf().infoMCStructHelper())
   {
     _midvids.push_back(VirtualDetectorId::TT_Mid);
@@ -234,7 +271,7 @@ namespace mu2e {
 	_allBranches.push_back(i_supp);
       }
     }
-    
+
     // Create all the info structs
     for (size_t i_branch = 0; i_branch < _allBranches.size(); ++i_branch) {
       TrkInfo ti;
@@ -266,6 +303,13 @@ namespace mu2e {
       _allTQIs.push_back(tqi);
       TrkPIDInfo tpi;
       _allTPIs.push_back(tpi);
+
+      std::vector<TrkStrawHitInfo> tshi;
+      _allTSHIs.push_back(tshi);
+      std::vector<TrkStrawMatInfo> tsmi;
+      _allTSMIs.push_back(tsmi);
+      std::vector<TrkStrawHitInfoMC> tshimc;
+      _allTSHIMCs.push_back(tshimc);
     }
   }
 
@@ -294,19 +338,20 @@ namespace mu2e {
       _trkana->Branch((branch+"mid").c_str(),&_allMidTIs.at(i_branch),TrkFitInfo::leafnames().c_str());
       _trkana->Branch((branch+"xit").c_str(),&_allXitTIs.at(i_branch),TrkFitInfo::leafnames().c_str());
       _trkana->Branch((branch+"tch").c_str(),&_allTCHIs.at(i_branch),TrkCaloHitInfo::leafnames().c_str());
-      if (_conf.filltrkqual() && i_branchConfig.filltrkqual()) {
+      if (_conf.filltrkqual() && i_branchConfig.options().filltrkqual()) {
 	_trkana->Branch((branch+"trkqual").c_str(), &_allTQIs.at(i_branch), TrkQualInfo::leafnames().c_str());
       }
-      if (_conf.filltrkpid() && i_branchConfig.filltrkpid()) {
+      if (_conf.filltrkpid() && i_branchConfig.options().filltrkpid()) {
 	_trkana->Branch((branch+"trkpid").c_str(), &_allTPIs.at(i_branch), TrkPIDInfo::leafnames().c_str());
       }
-      // optionally add detailed branches (for now just for the candidate branch, we can think about adding these for supplement branches in the future)
-      if(_conf.diag() > 1 && i_branch==_candidateIndex){ 
-	_trkana->Branch((branch+"tsh").c_str(),&_detsh);
-	_trkana->Branch((branch+"tsm").c_str(),&_detsm);
+      // optionally add hit-level branches
+      // (for the time being diagLevel : 2 will still work, but I propose removing this at some point)
+      if(_conf.diag() > 1 || (_conf.fillhits() && i_branchConfig.options().fillhits())){ 
+	_trkana->Branch((branch+"tsh").c_str(),&_allTSHIs.at(i_branch));
+	_trkana->Branch((branch+"tsm").c_str(),&_allTSMIs.at(i_branch));
       }
       // optionall add MC branches
-      if(_conf.fillmc() && i_branchConfig.fillmc()){
+      if(_conf.fillmc() && i_branchConfig.options().fillmc()){
 	_trkana->Branch((branch+"mc").c_str(),&_allMCTIs.at(i_branch),TrkInfoMC::leafnames().c_str());
 	_trkana->Branch((branch+"mcgen").c_str(),&_allMCGenTIs.at(i_branch),GenInfo::leafnames().c_str());
 	_trkana->Branch((branch+"mcpri").c_str(),&_allMCPriTIs.at(i_branch),GenInfo::leafnames().c_str());
@@ -314,23 +359,36 @@ namespace mu2e {
 	_trkana->Branch((branch+"mcmid").c_str(),&_allMCMidTIs.at(i_branch),TrkInfoMCStep::leafnames().c_str());
 	_trkana->Branch((branch+"mcxit").c_str(),&_allMCXitTIs.at(i_branch),TrkInfoMCStep::leafnames().c_str());
 	_trkana->Branch((branch+"tchmc").c_str(),&_allMCTCHIs.at(i_branch),CaloClusterInfoMC::leafnames().c_str());
-	if(_conf.diag() > 1 && i_branch==_candidateIndex) { // just for the candidate branch
-	  _trkana->Branch((branch+"tshmc").c_str(),&_detshmc);
+	// at hit-level MC information
+	// (for the time being diagLevel will still work, but I propose removing this at some point)
+	if(_conf.diag() > 1 || (_conf.fillhits() && i_branchConfig.options().fillhits())){ 
+	  _trkana->Branch((branch+"tshmc").c_str(),&_allTSHIMCs.at(i_branch));
 	}
       }
     }
 // trigger info.  Actual names should come from the BeginRun object FIXME
     if(_conf.filltrig()) {
       _trkana->Branch("trigbits",&_trigbits,"trigbits/i");
-      _trigbitsh = tfs->make<TH1F>("trigbits","Trigger Bits",16,-0.5,15.5);
     }
 // calorimeter information for the downstream electron track
 // CRV info
-    if(_conf.crv()) { 
+    if(_conf.crv()) {
       _trkana->Branch("crvinfo",&_crvinfo);
+      _trkana->Branch("crvsummary",&_crvsummary);
       _trkana->Branch("bestcrv",&_bestcrv,"bestcrv/I");
+      if(_conf.crvpulses()) {
+        _trkana->Branch("crvpulseinfo",&_crvpulseinfo);
+        _trkana->Branch("crvwaveforminfo",&_crvwaveforminfo);
+      }
       if(_conf.fillmc()){
-	if(_conf.crv())_trkana->Branch("crvinfomc",&_crvinfomc);
+	if(_conf.crv())
+        {
+          _trkana->Branch("crvinfomc",&_crvinfomc);
+          _trkana->Branch("crvsummarymc",&_crvsummarymc);
+          _trkana->Branch("crvinfomcplane",&_crvinfomcplane);
+          if(_conf.crvpulses())
+            _trkana->Branch("crvpulseinfomc",&_crvpulseinfomc);
+        }
       }
     }
 // helix info
@@ -387,7 +445,7 @@ namespace mu2e {
       // TrkQual
       std::string i_trkqual_tag;
       art::Handle<TrkQualCollection> trkQualCollHandle;
-      if (i_branchConfig.trkqual(i_trkqual_tag) && _conf.filltrkqual()) {
+      if (i_branchConfig.options().trkqual(i_trkqual_tag) && i_branchConfig.options().filltrkqual() && _conf.filltrkqual()) {
 	art::InputTag trkQualInputTag = i_trkqual_tag + i_branchConfig.suffix();
 	event.getByLabel(trkQualInputTag,trkQualCollHandle);
 	if (trkQualCollHandle->size() != kalSeedCollHandle->size()) {
@@ -399,7 +457,7 @@ namespace mu2e {
       // TrkCaloHitPID
       std::string i_trkpid_tag;
       art::Handle<TrkCaloHitPIDCollection> trkpidCollHandle;
-      if (i_branchConfig.trkpid(i_trkpid_tag) && _conf.filltrkpid()) {
+      if (i_branchConfig.options().trkpid(i_trkpid_tag) && i_branchConfig.options().filltrkpid() && _conf.filltrkpid()) {
 	art::InputTag trkpidInputTag = i_trkpid_tag + i_branchConfig.suffix();
 	event.getByLabel(trkpidInputTag,trkpidCollHandle);
 	if (trkpidCollHandle->size() != kalSeedCollHandle->size()) {
@@ -437,6 +495,8 @@ namespace mu2e {
     _tcnt.reset();
     _hinfo.reset();
     _wtinfo.reset();
+    // reset
+    resetBranches();
     // fill track counts
     for (size_t i_branch = 0; i_branch < _allBranches.size(); ++i_branch) {
       _tcnt._counts[i_branch] = (_allKSCHs.at(i_branch))->size();
@@ -450,8 +510,8 @@ namespace mu2e {
     const auto& candidateKSCH = _allKSCHs.at(_candidateIndex);
     const auto& candidateKSC = *candidateKSCH;
     for (size_t i_kseed = 0; i_kseed < candidateKSC.size(); ++i_kseed) {
-    // reset
-      resetBranches();
+
+      bool skip_kseed = false; // there may be a reason we don't want to write this KalSeed out
 
       auto const& candidateKS = candidateKSC.at(i_kseed);
       fillAllInfos(candidateKSCH, _candidateIndex, i_kseed); // fill the info structs for the candidate
@@ -469,17 +529,33 @@ namespace mu2e {
 	}
 	const auto& i_supplementKSCH = _allKSCHs.at(i_branch);
 	const auto& i_supplementKSC = *i_supplementKSCH;
+
+	// If we require a supplement track of this type, and there are none...
+	if (i_supplementKSC.size()==0 && _allBranches.at(i_branch).options().required()) {
+	  skip_kseed = true; // ...skip this KalSeed
+	}	  
+
 	// find the supplement track closest in time
 	auto i_supplementKS = findSupplementTrack(i_supplementKSC,candidateKS,sameColl);
 	if(i_supplementKS < i_supplementKSC.size()) { 
 	  fillAllInfos(_allKSCHs.at(i_branch), i_branch, i_supplementKS);
 	}
       }
+    
+      if (skip_kseed) {
+	continue;
+      }
 
       // TODO we want MC information when we don't have a track
       // fill CRV info
       if(_conf.crv()){
-	CRVAnalysis::FillCrvHitInfoCollections(_conf.crvCoincidenceModuleLabel(), _conf.crvCoincidenceMCModuleLabel(), event, _crvinfo, _crvinfomc);
+	CRVAnalysis::FillCrvHitInfoCollections(_conf.crvCoincidenceModuleLabel(), _conf.crvCoincidenceMCModuleLabel(),
+                                               _conf.crvRecoPulseLabel(), _conf.crvStepPointMCLabel(), _conf.simParticleLabel(), _conf.mcTrajectoryLabel(), event,
+                                               _crvinfo, _crvinfomc, _crvsummary, _crvsummarymc, _crvinfomcplane, _conf.crvPlaneY());
+        if(_conf.crvpulses())
+          CRVAnalysis::FillCrvPulseInfoCollections(_conf.crvRecoPulseLabel(), _conf.crvWaveformsModuleLabel(), _conf.crvDigiModuleLabel(),
+                                                   _infoMCStructHelper.getTimeMaps(), event, _crvpulseinfo, _crvpulseinfomc, _crvwaveforminfo);
+
 //	find the best CRV match (closest in time)
 	_bestcrv=-1;
 	float mindt=1.0e9;
@@ -497,7 +573,7 @@ namespace mu2e {
       _trkana->Fill();
     }
 
-    if(_conf.pempty()) { // if we want to process empty events
+    if(_conf.pempty() && candidateKSC.size()==0) { // if we want to process empty events
       _trkana->Fill();
     }
   }
@@ -546,37 +622,50 @@ namespace mu2e {
 
   void TrackAnalysisReco::fillTriggerBits(const art::Event& event,std::string const& process) {
     //get the TriggerResult from the process that created the KalFinalFit downstream collection
-    static const std::string tname("_trigger"); // all trigger paths have this in the name
-    static bool first(true);
-    static std::array<bool,16> istrig = {false};
     art::InputTag const tag{Form("TriggerResults::%s", process.c_str())};
     auto trigResultsH = event.getValidHandle<art::TriggerResults>(tag);
     const art::TriggerResults* trigResults = trigResultsH.product();
     TriggerResultsNavigator tnav(trigResults);
-   _trigbits = 0;
+    _trigbits = 0;
    // setup the bin labels
-    if(first){ // is there a better way to do this?  I think not
-      for(size_t id=0;id < trigResults->size(); ++id){
-	if (tnav.getTrigPath(id).find(tname) != std::string::npos) {
-	  _trigbitsh->GetXaxis()->SetBinLabel(id+1,tnav.getTrigPath(id).c_str());
-	  istrig[id] =true;
+    if(_trigbitsh == 0){ // is there a better way to do this?  I think not
+      unsigned ntrig(0);
+      unsigned npath = trigResults->size();
+      for(size_t ipath=0;ipath < npath; ++ipath){
+	if (tnav.getTrigPath(ipath).find(_conf.trigpathsuffix()) != std::string::npos) {
+	  _tmap[ipath] = ntrig;
+	  ntrig++;
 	}
       }
-      first = false;
+      // build trigger histogram
+      art::ServiceHandle<art::TFileService> tfs;
+      _trigbitsh = tfs->make<TH1F>("trigbits","Trigger IDs",ntrig,-0.5,ntrig-0.5);
+      for(size_t ipath=0;ipath < npath; ++ipath){
+	auto ifnd = _tmap.find(ipath);
+	if(ifnd != _tmap.end()){
+	  _trigbitsh->GetXaxis()->SetBinLabel(ifnd->second+1,tnav.getTrigPath(ipath).c_str());
+	}
+      }
     }
-    for(size_t id=0;id < trigResults->size(); ++id){
-      if(trigResults->accept(id) && istrig[id]) {
-	_trigbitsh->Fill(id);
-	_trigbits |= 1 << id;
-	if(_conf.debug() > 1)
-	  cout << "Trigger path " << tnav.getTrigPath(id) << " returns " << trigResults->accept(id) << endl;
+    for(size_t ipath=0;ipath < trigResults->size(); ++ipath){
+      if(trigResults->accept(ipath)) {
+	auto ifnd = _tmap.find(ipath);
+	if(ifnd != _tmap.end()){
+	  unsigned itrig = ifnd->second;
+	  _trigbitsh->Fill(itrig);
+	  _trigbits |= 1 << itrig;
+	  if(_conf.debug() > 1)
+	    cout << "Trigger path " << tnav.getTrigPath(ipath) << " Trigger ID " << itrig << " returns " << trigResults->accept(ipath) << endl;
+	}
       }
     }
     if(_conf.debug() > 0){
       cout << "Found TriggerResults for process " << process << " with " << trigResults->size() << " Lines"
 	<< " trigger bits word " << _trigbits << endl;
-      TriggerResultsNavigator tnav(trigResults);
-      tnav.print();
+      if(_conf.debug() > 1){
+	TriggerResultsNavigator tnav(trigResults);
+	tnav.print();
+      }
     }
   }
 
@@ -598,9 +687,9 @@ namespace mu2e {
     _infoStructHelper.fillTrkFitInfo(kseed,_allXitTIs.at(i_branch),xitpos);
     //      _tcnt._overlaps[0] = _tcomp.nOverlap(kseed, kseed);
 
-    if(_conf.diag() > 1 && i_branch==_candidateIndex){ // want hit level info
-      _infoStructHelper.fillHitInfo(kseed, _detsh);
-      _infoStructHelper.fillMatInfo(kseed, _detsm);
+    if(_conf.diag() > 1 || (_conf.fillhits() && branchConfig.options().fillhits())){ // want hit level info
+      _infoStructHelper.fillHitInfo(kseed, _allTSHIs.at(i_branch));
+      _infoStructHelper.fillMatInfo(kseed, _allTSMIs.at(i_branch));
     }
     if(_conf.helices()){
       _infoStructHelper.fillHelixInfo(kseed, _hinfo);
@@ -634,15 +723,17 @@ namespace mu2e {
     }
 
 // all RecoQuals
-    std::vector<Float_t> recoQuals;
+    std::vector<Float_t> recoQuals; // for the output value
     for (const auto& i_recoQualHandle : _allRQCHs.at(i_branch)) {
-      double recoQual = i_recoQualHandle->at(i_kseed)._value;
+      Float_t recoQual = i_recoQualHandle->at(i_kseed)._value;
       recoQuals.push_back(recoQual);
+      Float_t recoQualCalib = i_recoQualHandle->at(i_kseed)._calib;
+      recoQuals.push_back(recoQualCalib);
     }
     _allRQIs.at(i_branch).setQuals(recoQuals);
 // TrkQual
     std::string trkqual_branch;
-    if(_conf.filltrkqual() && branchConfig.trkqual(trkqual_branch)) { 
+    if(_conf.filltrkqual() && branchConfig.options().filltrkqual() && branchConfig.options().trkqual(trkqual_branch)) { 
       const auto& trkQualCollHandle = _allTQCHs.at(i_branch);
       if (trkQualCollHandle.isValid()) { // we could have put an empty TrkQualCollection in, if we didn't want it
 	const auto& trkQualColl = *trkQualCollHandle;
@@ -652,7 +743,7 @@ namespace mu2e {
     }
 // TrkCaloHitPID
     std::string trkpid_branch;
-    if (_conf.filltrkpid() && branchConfig.trkpid(trkpid_branch)) {
+    if (_conf.filltrkpid() && branchConfig.options().filltrkpid() && branchConfig.options().trkpid(trkpid_branch)) {
       const auto& tchpcolH = _allTCHPCHs.at(i_branch);
       if (tchpcolH.isValid()) {
 	const auto& tchpcol = *tchpcolH;
@@ -661,7 +752,7 @@ namespace mu2e {
       }
     }
 // fill MC info associated with this track
-    if(_conf.fillmc() && branchConfig.fillmc()) { 
+    if(_conf.fillmc() && branchConfig.options().fillmc()) { 
       const PrimaryParticle& primary = *_pph;
       // use Assns interface to find the associated KalSeedMC; this uses ptrs
       auto kptr = art::Ptr<KalSeed>(ksch,i_kseed);
@@ -677,8 +768,8 @@ namespace mu2e {
 	  _infoMCStructHelper.fillTrkInfoMCStep(kseedmc, _allMCXitTIs.at(i_branch), _xitvids, t0);
 	  _infoMCStructHelper.fillGenAndPriInfo(kseedmc, primary, _allMCPriTIs.at(i_branch), _allMCGenTIs.at(i_branch));
 	    
-	  if (_conf.diag()>1 && i_branch == _candidateIndex) {
-	    _infoMCStructHelper.fillHitInfoMCs(kseedmc, _detshmc);
+	  if(_conf.diag() > 1 || (_conf.fillhits() && branchConfig.options().fillhits())){ 
+	    _infoMCStructHelper.fillHitInfoMCs(kseedmc, _allTSHIMCs.at(i_branch));
 	  }
 	  break;
 	}
@@ -711,7 +802,14 @@ namespace mu2e {
 	size_t pos;
 	if (selection != "") { // if we want to add a selection
 	  pos = moduleLabel.find(selection);
-	  if (pos == std::string::npos) { // check to see if this appears
+
+	  // make sure that the selection (e.g. "DeM") appears at the end of the module label
+	  if (pos == std::string::npos) {
+	    //      std::cout << "Selection not found" << std::endl;
+	    continue;
+	  }
+	  else if (pos+selection.length() != moduleLabel.size()) {
+	    //      std::cout << "Selection wasn't at end of moduleLabel" << std::endl;
 	    continue;
 	  }
 	  moduleLabel = moduleLabel.erase(pos, selection.length());
@@ -753,13 +851,19 @@ namespace mu2e {
       _allRQIs.at(i_branch).reset();
       _allTQIs.at(i_branch).reset();
       _allTPIs.at(i_branch).reset();
+
+      // clear vectors
+      _allTSHIs.at(i_branch).clear();
+      _allTSMIs.at(i_branch).clear();
+      _allTSHIMCs.at(i_branch).clear();
     }
 // clear vectors
-    _detsh.clear();
-    _detsm.clear();
-    _detshmc.clear();
     _crvinfo.clear();
     _crvinfomc.clear();
+    _crvinfomcplane.clear();
+    _crvpulseinfo.clear();
+    _crvwaveforminfo.clear();
+    _crvpulseinfomc.clear();
   }
 }  // end namespace mu2e
 

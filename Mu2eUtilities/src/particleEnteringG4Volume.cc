@@ -1,3 +1,7 @@
+#include "MCDataProducts/inc/SimParticle.hh"
+#include "MCDataProducts/inc/StepPointMC.hh"
+#include "MCDataProducts/inc/StrawGasStep.hh"
+
 #include "Mu2eUtilities/inc/particleEnteringG4Volume.hh"
 
 art::Ptr<mu2e::SimParticle> mu2e::particleEnteringG4Volume(const StepPointMC& step) {
@@ -12,5 +16,9 @@ art::Ptr<mu2e::SimParticle> mu2e::particleEnteringG4Volume(const StepPointMC& st
       p = p->parent();
     }
 
+    return p;
+}
+art::Ptr<mu2e::SimParticle> mu2e::particleEnteringG4Volume(const StrawGasStep& step) {
+    art::Ptr<SimParticle> p = step.simParticle();
     return p;
 }

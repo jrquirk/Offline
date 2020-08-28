@@ -19,6 +19,8 @@
 //#include "Mu2eUtilities/inc/LsqSums4.hh"
 #include "TrkReco/inc/RobustHelixFinderData.hh"
 
+#include "Mu2eUtilities/inc/MedianCalculator.hh"
+
 //using namespace ROOT::Math::VectorUtil;
 
 namespace mu2e 
@@ -55,10 +57,17 @@ namespace mu2e
     explicit RobustHelixFit(fhicl::ParameterSet const&);
     virtual ~RobustHelixFit();
 
-    bool initCircle(RobustHelixFinderData& helixData, bool forceTargetCon);
-    void fitCircle(RobustHelixFinderData& helixData, bool forceTargetCon);
+    bool initCircle(RobustHelixFinderData& helixData, bool forceTargetCon, bool useTripleAreaWt=false);
+    void fitCircle(RobustHelixFinderData& helixData, bool forceTargetCon, bool useTripleAreaWt=false);
     bool initFZ(RobustHelixFinderData& helixData, int initHitPhi=1);
     bool initFZ_2(RobustHelixFinderData& helixData);
+    bool initFZ_from_dzFrequency(RobustHelixFinderData& helixData, int initHitPhi=1);
+    bool fillArrayDz(RobustHelixFinderData& HelixData, std::vector<int> &v,float &bin_size, float& startDz);
+    bool extractFZ0(RobustHelixFinderData& HelixData, float& fz0);
+    bool extractLambdaFromDzHist(int *hist_sum, float& lambda);
+    void findHistPeaks(std::vector<int> &input, int bin_size, 
+		       float &start_dz,
+		       std::vector<float> &xPeak, std::vector<float> &xSigma, std::vector<float>&swmax, std::vector<int> &iPeak, int &first_peak, int &peaks_found);
     void fitFZ(RobustHelixFinderData& helixData);
     void fitFZ_2(RobustHelixFinderData& helixData, int weightMode=1);
     bool goodHelix(RobustHelix const& rhel);
@@ -79,14 +88,14 @@ namespace mu2e
     const Tracker*            _tracker;
     const Calorimeter*         _calorimeter;
 
-    void fitCircleMedian(RobustHelixFinderData& helixData, bool forceTargetCon);
+    void fitCircleMedian(RobustHelixFinderData& helixData, bool forceTargetCon, bool useTripleAreaWt=false);
     
     float lambdaMin()  { return _lmin; }
     float lambdaMax()  { return _lmax; }
 
   private:
 
-    void fitHelix(RobustHelixFinderData& helixData, bool forceTargetCon);
+    void fitHelix(RobustHelixFinderData& helixData, bool forceTargetCon, bool useTripletAreaWt=false);
     void fitCircleAGE(RobustHelixFinderData& helixData);
     void fitCircleMean(RobustHelixFinderData& helixData);
     void findAGE(RobustHelixFinderData  const& helixData, XYZVec const& center,float& rmed, float& age);
@@ -144,10 +153,17 @@ namespace mu2e
     Helicity _helicity; // helicity value to look for.  This defines the sign of dphi/dz
     TH1F _hphi;
     unsigned _ntripleMin, _ntripleMax;
+    bool     _use_initFZ_from_dzFrequency;
+    float    _initFZFrequencyNSigma;
+    int      _initFZFrequencyBinsToIntegrate;
+    int      _initFZFrequencyArraySize;
+    int      _initFZFrequencyNMaxPeaks;
+    float    _initFZFrequencyTolerance;
     unsigned _initFZNBins;
     float    _initFZMinL, _initFZMaxL, _initFZStepL;
     unsigned _fitFZNBins;
     float    _fitFZMinL, _fitFZMaxL, _fitFZStepL;
+    MedianCalculator  _medianCalculator;
   };
 }
 #endif

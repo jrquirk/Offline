@@ -99,7 +99,7 @@ services : {
 
    message               : @local::default_message
    TFileService          : { }
-   RandomNumberGenerator : { }
+   RandomNumberGenerator : {defaultEngineKind: "MixMaxRng" }
 
    GeometryService        : { inputFile      : "Mu2eG4/geom/geom_common_current.txt" }
    ConditionsService      : { conditionsfile : "Mu2eG4/test/conditions_01.txt"      }
@@ -117,15 +117,12 @@ physics : {
       collectionSizes: {
 	 module_type: CollectionSizeAnalyzer
          useModuleLabel: true useInstanceName: true useProcessName: false
-	 maxStepPointMultiplicity: 500
       }
    }
 
    producers: {
 
-      generate: {
-         module_type          : PrimaryProtonGun
-      }
+      generate: @local::PrimaryProtonGun
 
       genCounter: {
          module_type: GenEventCounter
@@ -140,7 +137,6 @@ physics : {
          visualization: @local::mu2eg4NoVisualization
 
          generatorModuleLabel: generate
-         MultiStageParameters: {} // this is the first stage
 
          SDConfig: {
             enableSD: [ virtualdetector ] // activate just the explicitly listed SDs
@@ -204,37 +200,29 @@ physics : {
    filters: {
       muonBeamFilter: {
          module_type: FilterG4Out
-         noInstanceName : true
          mainHitInputs : [ "g4run:mubeam" ]
          extraHitInputs : [ "g4run:virtualdetector" ]
-         numSimParticleCollections : 1
          vetoDaughters: []
       }
 
       dsRegionFilter: {
          module_type: FilterG4Out
-         noInstanceName : true
          mainHitInputs : [ "g4run:dsregion" ]
          extraHitInputs : [ "g4run:virtualdetector" ]
-         numSimParticleCollections : 1
          vetoDaughters: []
       }
 
       extmonBeamFilter: {
          module_type: FilterG4Out
-         noInstanceName : true
          mainHitInputs : [ "g4run:extmonbeam" ]
          extraHitInputs : [ "g4run:virtualdetector" ]
-         numSimParticleCollections : 1
          vetoDaughters: []
       }
 
       extmonRegionFilter: {
          module_type: FilterG4Out
-         noInstanceName : true
          mainHitInputs : [ "g4run:extmonregion" ]
          extraHitInputs : [ "g4run:virtualdetector" ]
-         numSimParticleCollections : 1
          vetoDaughters: []
       }
 
@@ -278,7 +266,8 @@ outputs: {
       ]
    }
 
-   dsout : {
+   
+dsout : {
       module_type : RootOutput
       SelectEvents: ["trigdsregion"]
       outputCommands:   [ "drop *_*_*_*",
@@ -337,5 +326,5 @@ services.message.destinations.log.categories.ArtReport.limit : 1
 services.message.destinations.log.categories.ArtReport.timespan : 300
 
 // Initialze seeding of random engines: do not put these lines in base .fcl files for grid jobs.
-services.SeedService.baseSeed         :  0
+services.SeedService.baseSeed         :  8
 services.SeedService.maxUniqueEngines :  20

@@ -119,6 +119,7 @@ namespace mu2e
 
     ProditionsHandle<StrawResponse> _strawResponse_h;
     ProditionsHandle<Mu2eDetector> _mu2eDetector_h;
+    ProditionsHandle<Tracker> _alignedTracker_h;
     // flow diagnostic
   };
 
@@ -156,7 +157,7 @@ namespace mu2e
 // provide for interactive diagnostics
 //-----------------------------------------------------------------------------
     _data.result    = &_result;
-    
+
     if (_diag != 0) {
       _hmanager = art::make_tool<ModuleHistToolBase>(pset.get<fhicl::ParameterSet>("diagPlugin"));
       fhicl::ParameterSet ps1 = pset.get<fhicl::ParameterSet>("KalFit.DoubletAmbigResolver");
@@ -180,16 +181,11 @@ namespace mu2e
     }
   }
 //-----------------------------------------------------------------------------
-  void KalFinalFit::beginRun(art::Run& ) {
-    mu2e::GeomHandle<mu2e::Tracker> th;
-    _data.tracker     = th.get();
-
+  void KalFinalFit::beginRun(art::Run& r) {
     mu2e::GeomHandle<mu2e::Calorimeter> ch;
     _data.calorimeter = ch.get();
-    
+
     _kfit.setCalorimeter (_data.calorimeter);
-    _kfit.setTracker     (_data.tracker);
-    
     _kfit.setCaloGeom();
   }
 
@@ -198,6 +194,9 @@ namespace mu2e
 
     auto srep = _strawResponse_h.getPtr(event.id());
     auto detmodel = _mu2eDetector_h.getPtr(event.id());
+
+    _data.tracker = _alignedTracker_h.getPtr(event.id()).get();
+    _kfit.setTracker(_data.tracker);
 
     // event printout
     _iev=event.id().event();
@@ -222,7 +221,7 @@ namespace mu2e
       if(_shfcol != 0) flag.merge(_shfcol->at(index++));
       shfcol->push_back(flag);
     }
- 
+
     if (_diag!=0){
       _data.event  = &event;
       _data.eventNumber = event.event();
@@ -301,19 +300,19 @@ namespace mu2e
 	      int icc = _kfit.addTrkCaloHit(detmodel, _result);
 	      if(icc >=0){
 	      // set the CaloCluster Ptr for the TrkCaloHitSeed.
-		ccPtr = art::Ptr<CaloCluster>(clH,(size_t)icc);	
+		ccPtr = art::Ptr<CaloCluster>(clH,(size_t)icc);
 	      }
 	    }
 	    if ( hasTrkCaloHit(_result)) _kfit.weedTrkCaloHit(_result);
 	    if (_diag!=0) {
 	      _kfit.fillTchDiag(_result);
-	      _data.tchDiskId  = _result.diag.diskId;	 
-	      _data.tchAdded   = _result.diag.added;	 
-	      _data.tchDepth   = _result.diag.depth;	  
-	      _data.tchDOCA    = _result.diag.doca;	   
-	      _data.tchDt      = _result.diag.dt;     
-	      _data.tchTrkPath = _result.diag.trkPath;	
-	      _data.tchEnergy  = _result.diag.energy;    
+	      _data.tchDiskId  = _result.diag.diskId;
+	      _data.tchAdded   = _result.diag.added;
+	      _data.tchDepth   = _result.diag.depth;
+	      _data.tchDOCA    = _result.diag.doca;
+	      _data.tchDt      = _result.diag.dt;
+	      _data.tchTrkPath = _result.diag.trkPath;
+	      _data.tchEnergy  = _result.diag.energy;
 
 	    }
 	  }
@@ -327,7 +326,7 @@ namespace mu2e
 	  if(_debug > 1)
 	    cout << "AddHits Fit result " << _result.krep->fitStatus()
 	    << " NDOF = " << _result.krep->nDof() << endl;
-	  
+
 //-----------------------------------------------------------------------------
 // and weed hits again to insure that addHits doesn't add junk
 //-----------------------------------------------------------------------------
@@ -339,85 +338,86 @@ namespace mu2e
 //-----------------------------------------------------------------------------
 // now evaluate the T0 and its error using the straw hits
 //-----------------------------------------------------------------------------
-	  int last_iteration  = -1;
-	  if (_cprmode)	_kfit.updateT0(_result, last_iteration);
+//	  int last_iteration  = -1;
+//	  if (_cprmode)	_kfit.updateT0(_result, last_iteration);
 
 	  // warning about 'fit current': this is not an error
 	  if(!_result.krep->fitCurrent()){
 	    cout << "Fit not current! " << endl;
-	  }
-	  // flg all hits as belonging to a track.  Doesn't work for TrkCaloHit FIXME!
-	  if(ikseed<StrawHitFlag::_maxTrkId){
-	    for(auto ihit=_result.krep->hitVector().begin();ihit != _result.krep->hitVector().end();++ihit){
-	      TrkStrawHit* tsh = dynamic_cast<TrkStrawHit*>(*ihit);
-	      if((*ihit)->isActive() && tsh != 0)shfcol->at(tsh->index()).merge(StrawHitFlag::track);
+	    _result.deleteTrack();
+	  } else {
+	    // flg all hits as belonging to a track.  Doesn't work for TrkCaloHit FIXME!
+	    if(ikseed<StrawHitFlag::_maxTrkId){
+	      for(auto ihit=_result.krep->hitVector().begin();ihit != _result.krep->hitVector().end();++ihit){
+		TrkStrawHit* tsh = dynamic_cast<TrkStrawHit*>(*ihit);
+		if((*ihit)->isActive() && tsh != 0)shfcol->at(tsh->index()).merge(StrawHitFlag::track);
+	      }
 	    }
-	  }
-	  
-	  
-	  // save successful kalman fits in the event
-	  KalRep *krep = _result.stealTrack();
-	  krcol->push_back(krep);
 
-	  int index = krcol->size()-1;
-	  krPtrcol->emplace_back(kalRepsID, index, event.productGetter(kalRepsID));
-	  // convert successful fits into 'seeds' for persistence
-	  TrkFitFlag fflag(kseed.status());
-	  fflag.merge(TrkFitFlag::KFF);
-	  if(krep->fitStatus().success()) fflag.merge(TrkFitFlag::kalmanOK);
-	  if(krep->fitStatus().success()==1) fflag.merge(TrkFitFlag::kalmanConverged);
-	  //	  KalSeed fseed(_tpart,_fdir,krep->t0(),krep->flt0(),kseed.status());
-	  KalSeed fseed(krep->particleType(),_fdir,krep->t0(),krep->flt0(),fflag);
-	  // reference the seed fit in this fit
-	  auto ksH = event.getValidHandle<KalSeedCollection>(_ksToken);
-	  fseed._kal = art::Ptr<KalSeed>(ksH,ikseed);
-	  // redundant but possibly useful
-	  fseed._helix = kseed.helix();
-	  // fill with new information
-	  fseed._t0 = krep->t0();
-	  fseed._flt0 = krep->flt0();
-	  // global fit information
-	  fseed._chisq = krep->chisq();
-	  // compute the fit consistency.  Note our fit has effectively 6 parameters as t0 is allowed to float and its error is propagated to the chisquared
-	  fseed._fitcon =  TrkUtilities::chisqConsistency(krep);
-	  fseed._nbend = TrkUtilities::countBends(krep);
-	  TrkUtilities::fillStrawHitSeeds(krep,*_chcol,fseed._hits);
-	  TrkUtilities::fillStraws(krep,fseed._straws);
-	  // sample the fit at the requested z positions.  Need options here to define a set of
-	  // standard points, or to sample each unique segment on the fit FIXME!
-	  for(auto zpos : _zsave) {
-	    // compute the flightlength for this z
-	    double fltlen = krep->pieceTraj().zFlight(zpos);
-	    // sample the momentum at this flight.  This belongs in a separate utility FIXME
-	    BbrVectorErr momerr = krep->momentumErr(fltlen);
-	    // sample the helix
-	    double locflt(0.0);
-	    const HelixTraj* htraj = dynamic_cast<const HelixTraj*>(krep->localTrajectory(fltlen,locflt));
-	    // fill the segment
-	    KalSegment kseg;
-	    TrkUtilities::fillSegment(*htraj,momerr,locflt-fltlen,kseg);
-	    fseed._segments.push_back(kseg);
-	  }
-	  // see if there's a TrkCaloHit
-	  const TrkCaloHit* tch = TrkUtilities::findTrkCaloHit(krep);
-	  if(tch != 0){
-	    TrkUtilities::fillCaloHitSeed(tch,fseed._chit);
-	    // set the Ptr using the helix: this could be more direct FIXME!
-	    fseed._chit._cluster = ccPtr;
-	    // create a helix segment at the TrkCaloHit
-	    KalSegment kseg;
-	    // sample the momentum at this flight.  This belongs in a separate utility FIXME
-	    BbrVectorErr momerr = krep->momentumErr(tch->fltLen());
-	    double locflt(0.0);
-	    const HelixTraj* htraj = dynamic_cast<const HelixTraj*>(krep->localTrajectory(tch->fltLen(),locflt));
-	    TrkUtilities::fillSegment(*htraj,momerr,locflt-tch->fltLen(),kseg);
-	    fseed._segments.push_back(kseg);
-	  }
-	  // save KalSeed for this track
-	  kscol->push_back(fseed);
-	  
-	  if (_diag > 0) _hmanager->fillHistograms(&_data);
 
+	    // save successful kalman fits in the event
+	    KalRep *krep = _result.stealTrack();
+	    krcol->push_back(krep);
+
+	    int index = krcol->size()-1;
+	    krPtrcol->emplace_back(kalRepsID, index, event.productGetter(kalRepsID));
+	    // convert successful fits into 'seeds' for persistence
+	    TrkFitFlag fflag(kseed.status());
+	    fflag.merge(TrkFitFlag::KFF);
+	    if(krep->fitStatus().success()) fflag.merge(TrkFitFlag::kalmanOK);
+	    if(krep->fitStatus().success()==1) fflag.merge(TrkFitFlag::kalmanConverged);
+	    //	  KalSeed fseed(_tpart,_fdir,krep->t0(),krep->flt0(),kseed.status());
+	    KalSeed fseed(krep->particleType(),_fdir,krep->t0(),krep->flt0(),fflag);
+	    // reference the seed fit in this fit
+	    auto ksH = event.getValidHandle<KalSeedCollection>(_ksToken);
+	    fseed._kal = art::Ptr<KalSeed>(ksH,ikseed);
+	    // redundant but possibly useful
+	    fseed._helix = kseed.helix();
+	    // fill with new information
+	    fseed._t0 = krep->t0();
+	    fseed._flt0 = krep->flt0();
+	    // global fit information
+	    fseed._chisq = krep->chisq();
+	    // compute the fit consistency.  Note our fit has effectively 6 parameters as t0 is allowed to float and its error is propagated to the chisquared
+	    fseed._fitcon =  TrkUtilities::chisqConsistency(krep);
+	    fseed._nbend = TrkUtilities::countBends(krep);
+	    TrkUtilities::fillStrawHitSeeds(krep,*_chcol,fseed._hits);
+	    TrkUtilities::fillStraws(krep,fseed._straws);
+	    // sample the fit at the requested z positions.  Need options here to define a set of
+	    // standard points, or to sample each unique segment on the fit FIXME!
+	    for(auto zpos : _zsave) {
+	      // compute the flightlength for this z
+	      double fltlen = krep->pieceTraj().zFlight(zpos);
+	      // sample the momentum at this flight.  This belongs in a separate utility FIXME
+	      BbrVectorErr momerr = krep->momentumErr(fltlen);
+	      // sample the helix
+	      double locflt(0.0);
+	      const HelixTraj* htraj = dynamic_cast<const HelixTraj*>(krep->localTrajectory(fltlen,locflt));
+	      // fill the segment
+	      KalSegment kseg;
+	      TrkUtilities::fillSegment(*htraj,momerr,locflt-fltlen,kseg);
+	      fseed._segments.push_back(kseg);
+	    }
+	    // see if there's a TrkCaloHit
+	    const TrkCaloHit* tch = TrkUtilities::findTrkCaloHit(krep);
+	    if(tch != 0){
+	      TrkUtilities::fillCaloHitSeed(tch,fseed._chit);
+	      // set the Ptr using the helix: this could be more direct FIXME!
+	      fseed._chit._cluster = ccPtr;
+	      // create a helix segment at the TrkCaloHit
+	      KalSegment kseg;
+	      // sample the momentum at this flight.  This belongs in a separate utility FIXME
+	      BbrVectorErr momerr = krep->momentumErr(tch->fltLen());
+	      double locflt(0.0);
+	      const HelixTraj* htraj = dynamic_cast<const HelixTraj*>(krep->localTrajectory(tch->fltLen(),locflt));
+	      TrkUtilities::fillSegment(*htraj,momerr,locflt-tch->fltLen(),kseg);
+	      fseed._segments.push_back(kseg);
+	    }
+	    // save KalSeed for this track
+	    kscol->push_back(fseed);
+
+	    if (_diag > 0) _hmanager->fillHistograms(&_data);
+	  }
 	} else {// fit failure
 	  _result.deleteTrack();
 	  //	  delete krep;
@@ -433,7 +433,7 @@ namespace mu2e
     event.put(move(kscol));
     event.put(move(shfcol));
   }
-  
+
   // find the input data objects
   bool KalFinalFit::findData(const art::Event& evt){
     _chcol = 0;
@@ -533,7 +533,7 @@ namespace mu2e
 	}
 
         if (! found) {
-					// estimate trajectory length to hit 
+					// estimate trajectory length to hit
 	  double hflt = 0;
 	  TrkHelixUtils::findZFltlen(*reftraj,zhit,hflt);
 
@@ -562,7 +562,7 @@ namespace mu2e
 	  double      rdrift;//, hit_error(0.2);
 
 	  TrkStrawHit hit(srep,sh,straw,istr,hitt0,hflt,1.,1.);//hit_error,1.,_maxadddoca,1.);
-	  
+
 	  double tdrift=hit.time()-hit.hitT0()._t0;
 
 	  //	  tcal->TimeToDistance(straw.index(),tdrift,tdir,t2d);
@@ -627,8 +627,8 @@ namespace mu2e
 
     //clear the array
     kalData.missingHits.clear();
+    const Tracker& tracker = *_data.tracker;
 
-    const Tracker& tracker = *GeomHandle<Tracker>();
     //  Trajectory info
     Hep3Vector tdir;
     HepPoint tpos;
@@ -660,7 +660,7 @@ namespace mu2e
 	    Hep3Vector tpos(tp.x(),tp.y(),tp.z()); // ugly conversion FIXME!
 	    double hitlen = hdir.dot(tpos - hpos);
 	    TrkPoca hitpoca(krep->pieceTraj(),fltlen,htraj,hitlen);
-	    
+
 	    // flag hits with small residuals
 	    if(fabs(hitpoca.doca()) < _maxadddoca){
 	      MissingHit_t m;
@@ -674,14 +674,14 @@ namespace mu2e
       }
     }
   }
-  
+
 //--------------------------------------------------------------------------------
 // function to check the presence of a TrkCaloHit in the KalRep
 //--------------------------------------------------------------------------------
   bool KalFinalFit::hasTrkCaloHit(KalFitData&kalData){
     bool retval(false);
 
-    TrkHitVector *thv      = &(kalData.krep->hitVector());    
+    TrkHitVector *thv      = &(kalData.krep->hitVector());
     for (auto ihit=thv->begin();ihit!=thv->end(); ++ihit){
       TrkCaloHit*hit = dynamic_cast<TrkCaloHit*>(*ihit);
       if (hit != 0){
@@ -689,11 +689,11 @@ namespace mu2e
 	break;
       }
     }
-    
+
     return retval;
   }
 
-  
+
 }// mu2e
 
 DEFINE_ART_MODULE(mu2e::KalFinalFit);

@@ -53,7 +53,6 @@
 #include "RecoDataProducts/inc/KalRepCollection.hh"
 
 #include "MCDataProducts/inc/GenParticleCollection.hh"
-#include "MCDataProducts/inc/PhysicalVolumeInfoCollection.hh"
 #include "MCDataProducts/inc/SimParticleCollection.hh"
 #include "MCDataProducts/inc/StatusG4.hh"
 #include "MCDataProducts/inc/StepPointMC.hh"
@@ -778,7 +777,7 @@ namespace mu2e {
 
 
       CaloCrystalHit const& hit    = caloCrystalHits->at(ic);
-      CLHEP::Hep3Vector crystalPos = crystalPos = _calorimeter->geomUtil().mu2eToDiskFF(diskId,_calorimeter->crystal(crystalId).position());
+      CLHEP::Hep3Vector crystalPos = _calorimeter->geomUtil().mu2eToDiskFF(diskId,_calorimeter->crystal(crystalId).position());
 
       _cryEtot             += hit.energyDep();
       _cryTime[_nHits]      = hit.time();

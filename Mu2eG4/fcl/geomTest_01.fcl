@@ -19,7 +19,7 @@ source : {
 services : {
   message               : @local::default_message
   TFileService          : { fileName : "geomtest_01.root" }
-  RandomNumberGenerator : {}
+  RandomNumberGenerator : {defaultEngineKind: "MixMaxRng"}
 
   #GeometryService        : { inputFile      : "Mu2eG4/geom/STM/geom_final_hole_IFBTi0d635_FOVa5_ExtLiner20cmL_1cmT_FOVLinerW3cm0.txt" }  
   #GeometryService        : { inputFile      : "Mu2eG4/geom/STM/geom_final_hole_linerIFB_crack.txt" }  
@@ -54,7 +54,7 @@ physics : {
 physics.producers.g4run.physics.physicsListName: "QGSP_BERT"
 
 // Initialze seeding of random engines: do not put these lines in base .fcl files for grid jobs.
-services.SeedService.baseSeed         :  0
+services.SeedService.baseSeed         :  8
 services.SeedService.maxUniqueEngines :  20
 
 // Enable G4 graphics with the xy view.

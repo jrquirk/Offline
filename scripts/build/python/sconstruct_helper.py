@@ -15,12 +15,12 @@ import subprocess
 # return a dictionary with mu2eOpts
 def mu2eEnvironment():
     mu2eOpts = {}
-    if not os.environ.has_key('MU2E_BASE_RELEASE'):
+    if 'MU2E_BASE_RELEASE' not in os.environ:
         raise Exception('You have not specified MU2E_BASE_RELEASE for this build')
     primaryBase = os.environ['MU2E_BASE_RELEASE']
     mu2eOpts["primaryBase"] = primaryBase
 
-    if os.environ.has_key("MU2E_SATELLITE_RELEASE"):
+    if "MU2E_SATELLITE_RELEASE" in os.environ:
         mu2eOpts["satellite"] = True
         mu2eOpts["satelliteBase"] = os.environ["MU2E_SATELLITE_RELEASE"]
         base = mu2eOpts["satelliteBase"]
@@ -33,14 +33,15 @@ def mu2eEnvironment():
     mu2eOpts['libdir'] = base+'/lib'
     mu2eOpts['bindir'] = base+'/bin'
     mu2eOpts['tmpdir'] = base+'/tmp'
+    mu2eOpts['gendir'] = base+'/gen'
 
     envopts = os.environ['MU2E_SETUP_BUILDOPTS'].strip()
-    fsopts  = subprocess.check_output(primaryBase+"/buildopts",shell=True).strip()
+    fsopts  = subprocess.check_output(primaryBase+"/buildopts",shell=True).strip().decode() # decode to convert byte string to text
     if envopts != fsopts:
         raise Exception("ERROR: Inconsistent build options: (MU2E_SETUP_BUILDOPTS vs ./buildopts)\n"
              +"Please source setup.sh after setting new options with buildopts.\n")
 
-    # copy the buildopts to the dicitonary
+    # copy the buildopts to the dictionary
     mu2eOpts["buildopts"] = fsopts
     for line in fsopts.split():
         pp = line.split("=")
@@ -52,7 +53,7 @@ def mu2eEnvironment():
 # the list of root libraries
 # This comes from: root-config --cflags --glibs
 def rootLibs():
-    return [ 'GenVector', 'Core', 'RIO', 'Net', 'Hist', 'Spectrum', 'MLP', 'Graf', 'Graf3d', 'Gpad', 'Tree',
+    return [ 'GenVector', 'Core', 'RIO', 'Net', 'Hist', 'MLP', 'Graf', 'Graf3d', 'Gpad', 'Tree',
              'Rint', 'Postscript', 'Matrix', 'Physics', 'MathCore', 'Thread', 'Gui', 'm', 'dl' ]
 
 
@@ -128,8 +129,8 @@ def libPath(mu2eOpts):
 def mergeFlags(mu2eOpts):
     build = mu2eOpts['build']
     flags = ['-std=c++17','-Wall','-Wno-unused-local-typedefs','-g',
-             '-Werror','-Wl,--no-undefined','-gdwarf-2',
-             '-Werror=return-type','-Winit-self','-Woverloaded-virtual']
+             '-Werror','-Wl,--no-undefined','-gdwarf-2', '-Wl,--as-needed',
+             '-Werror=return-type','-Winit-self','-Woverloaded-virtual', '-DBOOST_BIND_GLOBAL_PLACEHOLDERS' ]
     if build == 'prof':
         flags = flags + [ '-O3', '-fno-omit-frame-pointer', '-DNDEBUG' ]
     elif build == 'debug':
@@ -156,9 +157,10 @@ def BaBarLibs():
 # Walk the directory tree to locate all SConscript files.
 def sconscriptList(mu2eOpts):
     ss=[]
-    for root,dirs,files in os.walk('.'):
-        for file in files:
-            if file == 'SConscript': ss.append('%s/%s'%(root[2:],file))
+    ss_append = ss.append
+    for root, _, files in os.walk('.'):
+        if 'SConscript' in files:
+            ss_append(os.path.join(root[2:], 'SConscript'))
 
     # If we are making a build for the trigger, do not build everything.
     if mu2eOpts["trigger"] == 'on':
@@ -173,9 +175,8 @@ def sconscriptList(mu2eOpts):
 
 # Make sure the build directories are created
 def makeSubDirs(mu2eOpts):
-    for dir in ['libdir','bindir','tmpdir'] :
-        cmd = "mkdir -p "+mu2eOpts[dir]
-        subprocess.call(cmd, shell=True)
+    for mdir in [mu2eOpts[d] for d in ['libdir','bindir','tmpdir', 'gendir']]:
+        os.makedirs(mdir, exist_ok=True)
 
 #
 # a method for creating build-on-demand targets
@@ -204,17 +205,17 @@ def extraCleanup():
     for top, dirs, files in os.walk("./lib"):
         for name in files:
             ff =  os.path.join(top, name)
-            print "removing file ", ff
+            print("removing file ", ff)
             os.unlink (ff)
 
     for top, dirs, files in os.walk("./tmp"):
         for name in files:
             ff =  os.path.join(top, name)
-            print "removing file ", ff
+            print("removing file ", ff)
             os.unlink (ff)
 
     for top, dirs, files in os.walk("./gen"):
         for name in files:
             ff =  os.path.join(top, name)
-            print "removing file ", ff
+            print("removing file ", ff)
             os.unlink (ff)

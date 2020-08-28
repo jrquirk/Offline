@@ -1,4 +1,3 @@
-
 #ifndef ValKalSeed_HH_
 #define ValKalSeed_HH_
 
@@ -32,7 +31,11 @@ namespace mu2e {
     TH1D* _hchi2;
     TH1D* _hhasCal;
     TH1D* _hfitCon;
+    TH1D* _hfitConC;
+    TH1D* _hfitConT;
     TH1D* _hp;
+    TH1D* _hpC;
+    TH1D* _hpT;
     TH1D* _hpce;
     TH1D* _hpcep;
     TH1D* _hpe;
@@ -50,8 +53,12 @@ namespace mu2e {
     TH1D* _hCCDOCA;
     TH1D* _hCChlen;
     TH1D* _hCCtlen;
+    TH1D* _hHDrift;
+    TH1D* _hHDOCA;
+    TH1D* _hHEDep;
+    TH1D* _hHPanel;
+    TH1D* _hSRadLen;
+    TH1D* _hSRadLenSum;
   };
 }
-
-
 #endif

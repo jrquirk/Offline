@@ -1,4 +1,5 @@
 #include "fcl/minimalMessageService.fcl"
+#include "fcl/standardProducers.fcl"
 #include "fcl/standardServices.fcl"
 #include "CRVResponse/fcl/prolog.fcl"
 
@@ -14,7 +15,7 @@ source :
 
 services :
 {
-  RandomNumberGenerator: { }
+  RandomNumberGenerator: {defaultEngineKind: "MixMaxRng" }
   GeometryService        : { inputFile : "Mu2eG4/geom/geom_common.txt" }
   ConditionsService      : { conditionsfile : "Mu2eG4/test/conditions_01.txt" }
   GlobalConstantsService : { inputFile : "Mu2eG4/test/globalConstants_01.txt" }
@@ -46,5 +47,7 @@ outputs:
   }
 }
 
+physics.producers.CrvCoincidenceClusterMatchMC.timeOffsets  : { inputs : [ @sequence::DigiCompression.TimeMaps ] }
+services.GeometryService.simulatedDetector.tool_type : "Mu2e"
 services.SeedService.baseSeed         :  773651
 services.SeedService.maxUniqueEngines :  20

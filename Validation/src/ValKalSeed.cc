@@ -14,7 +14,11 @@ int mu2e::ValKalSeed::declare(art::TFileDirectory tfs) {
   _hchi2 = tfs.make<TH1D>( "Chi2N", "Chi2/DOF", 100, 0.0, 20.0);
   _hhasCal = tfs.make<TH1D>( "hasCal", "CalCluster attached", 2, -0.5, 1.5);
   _hfitCon = tfs.make<TH1D>( "FitConn", "Fit CL", 100, 0.0, 1.0);
+  _hfitConC = tfs.make<TH1D>( "FitConnC", "Fit CL CPR", 100, 0.0, 1.0);
+  _hfitConT = tfs.make<TH1D>( "FitConnT", "Fit CL TPR", 100, 0.0, 1.0);
   _hp = tfs.make<TH1D>( "p", "p", 100, 0., 110.);
+  _hpC = tfs.make<TH1D>( "pC", "p CPR", 100, 0., 110.);
+  _hpT = tfs.make<TH1D>( "pT", "p TPR", 100, 0., 110.);
   _hpce = tfs.make<TH1D>( "pce", "p CE", 100, 95.0, 110.);
   _hpcep = tfs.make<TH1D>( "pcep", "p CE+", 100, 82.0, 97.);
   _hpe = tfs.make<TH1D>( "pe", "p error", 100, 0.0, 1.0);
@@ -31,6 +35,12 @@ int mu2e::ValKalSeed::declare(art::TFileDirectory tfs) {
   _hCCDOCA = tfs.make<TH1D>("CCDOCA","Calo DOCA to Track",100,-100.0,100.0);
   _hCChlen = tfs.make<TH1D>("CChlen","Calo POCA Depth",100,-100.0,500.0);
   _hCCtlen = tfs.make<TH1D>("CCtlen","Calo POCA Track Length",100,1000.0,5000.0);
+  _hHDrift = tfs.make<TH1D>("HDrift","Hit Drift Radius;drift radius (mm)",100,0.0,3.0);
+  _hHDOCA = tfs.make<TH1D>("HDOCA","Hit Wire DOCA;DOCA (mm)",100,-3.0,3.0);
+  _hHEDep = tfs.make<TH1D>("HEDep","Hit Energy Deposition;EDep (KeV)",100,0,5.0);
+  _hHPanel = tfs.make<TH1D>( "HPanel", "Hit Unique Panel",216, -0.5, 215.5);
+  _hSRadLen = tfs.make<TH1D>("SRadLen","Fractional Straw Radiation Length",100,0,1.0e-3);
+  _hSRadLenSum = tfs.make<TH1D>("SRadLenSum","Sum Fractional Straw Radiation Length",100,0,0.04);
   int ibin=1;
   _hCuts->GetXaxis()->SetBinLabel(ibin++,"All CE"); // bin 1, first visible
   _hCuts->GetXaxis()->SetBinLabel(ibin++,"MC Selection");
@@ -51,7 +61,7 @@ int mu2e::ValKalSeed::fill(const mu2e::KalSeedCollection & coll,
 
   // increment this by 1 any time the defnitions of the histograms or the 
   // histogram contents change, and will not match previous versions
-  _hVer->Fill(3.0);
+  _hVer->Fill(5.0);
 
   // p of highest momentum electron SimParticle with good tanDip
   double p_mc = mcTrkP(event);
@@ -65,14 +75,14 @@ int mu2e::ValKalSeed::fill(const mu2e::KalSeedCollection & coll,
     _hNStraw->Fill(ks.hits().size());
     _hNSeg->Fill(ks.segments().size());
     const TrkFitFlag& tff = ks.status();
+    bool isCPR = tff.hasAllProperties(TrkFitFlag::CPRHelix);
+    bool isTPR = tff.hasAllProperties(TrkFitFlag::TPRHelix);
 
     //    for(mu2e::TrkFitFlagDetail::bit_type i=0; i<f.size(); i++) 
     //  if(f.hasAnyProperty(i)) _hStatus->Fill(i); 
 
-    int i=0;
     for(auto sn: tff.bitNames()) { 
-      if(tff.hasAnyProperty(TrkFitFlag(sn.first))) _hStatus->Fill(i); 
-      i++;
+      if(tff.hasAnyProperty(TrkFitFlag(sn.first))) _hStatus->Fill(std::log2(sn.second)); 
     }
 
     _hflt0->Fill(ks.flt0());
@@ -82,7 +92,8 @@ int mu2e::ValKalSeed::fill(const mu2e::KalSeedCollection & coll,
     int q = ks.hasCaloCluster();
     _hhasCal->Fill(q);
     _hfitCon->Fill(ks.fitConsistency());
-
+    if(isCPR) _hfitConC->Fill(ks.fitConsistency());
+    if(isTPR) _hfitConT->Fill(ks.fitConsistency());
     if( ks.segments().size()>0 ) {
       // first segment - in default config, this is front of tracker
       std::size_t i = 0;
@@ -92,6 +103,8 @@ int mu2e::ValKalSeed::fill(const mu2e::KalSeedCollection & coll,
       auto const& h = ss.helix(); // HelixVal
       double p = ss.mom();
       _hp->Fill(ss.mom());
+      if(isCPR) _hpC->Fill(ss.mom());
+      if(isTPR) _hpT->Fill(ss.mom());
       _hpce->Fill(ss.mom());
       _hpcep->Fill(ss.mom());
       _hpe->Fill(ss.momerr());
@@ -146,6 +159,24 @@ int mu2e::ValKalSeed::fill(const mu2e::KalSeedCollection & coll,
       _hCChlen->Fill(chs.hitLen());
       _hCCtlen->Fill(chs.trkLen());
     }
+  // Assocated TrkStrawHit info
+    for(auto const& tshs : ks.hits()){
+      if(tshs.flag().hasAllProperties(StrawHitFlag::active)){
+	_hHDrift->Fill(tshs.driftRadius());
+	_hHDOCA->Fill(tshs.wireDOCA());
+	_hHEDep->Fill(1000*tshs.energyDep());
+	_hHPanel->Fill(tshs.strawId().uniquePanel());
+      }
+    }
+    // Assocated Material info
+    float radlensum(0.0);
+    for(auto const& ts : ks.straws()){
+      if(ts.active()){
+	_hSRadLen->Fill(ts.radLen());
+	radlensum += ts.radLen();
+      }
+    }
+    _hSRadLenSum->Fill(radlensum);
     
   }
   return 0;

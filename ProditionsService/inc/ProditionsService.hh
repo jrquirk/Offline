@@ -21,16 +21,17 @@
 #include "Mu2eInterfaces/inc/ProditionsEntity.hh"
 #include "Mu2eInterfaces/inc/ProditionsCache.hh"
 
-#include "TrackerConditions/inc/FullReadoutStrawConfig.hh"
-#include "TrackerConditions/inc/DeadStrawConfig.hh"
-#include "TrackerConditions/inc/StrawDriftConfig.hh"
-#include "TrackerConditions/inc/StrawPhysicsConfig.hh"
-#include "TrackerConditions/inc/StrawElectronicsConfig.hh"
-#include "TrackerConditions/inc/StrawResponseConfig.hh"
-#include "TrackerConditions/inc/AlignedTrackerConfig.hh"
-#include "TrackerConditions/inc/Mu2eMaterialConfig.hh"
-#include "TrackerConditions/inc/Mu2eDetectorConfig.hh"
+#include "TrackerConfig/inc/FullReadoutStrawConfig.hh"
+#include "TrackerConfig/inc/DeadStrawConfig.hh"
+#include "TrackerConfig/inc/StrawDriftConfig.hh"
+#include "TrackerConfig/inc/StrawPhysicsConfig.hh"
+#include "TrackerConfig/inc/StrawElectronicsConfig.hh"
+#include "TrackerConfig/inc/StrawResponseConfig.hh"
+#include "TrackerConfig/inc/AlignedTrackerConfig.hh"
+#include "TrackerConfig/inc/Mu2eMaterialConfig.hh"
+#include "TrackerConfig/inc/Mu2eDetectorConfig.hh"
 
+#include "AnalysisConfig/inc/MVACatalogConfig.hh"
 
 namespace mu2e {
 
@@ -70,7 +71,9 @@ namespace mu2e {
       fhicl::Table<Mu2eDetectorConfig> mu2eDetector{
 	  Name("mu2eDetector"), 
 	  Comment("Mu2e detector model for BTrk") };
-
+      fhicl::Table<MVACatalogConfig> trkQualCatalog{
+	  Name("trkQualCatalog"), 
+	  Comment("Catalog of TrkQual trainings") };
     };
 
     // this line is required by art to allow the command line help print
@@ -96,5 +99,5 @@ namespace mu2e {
 
 }
 
-DECLARE_ART_SERVICE(mu2e::ProditionsService, LEGACY)
+DECLARE_ART_SERVICE(mu2e::ProditionsService, SHARED)
 #endif /* ProditionsService_ProditionsService_hh */

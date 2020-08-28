@@ -10,6 +10,8 @@ using namespace std;
 #include "CLHEP/Vector/Rotation.h"
 #include "CalorimeterGeom/inc/DiskCalorimeter.hh"
 #include "CalorimeterGeom/inc/Calorimeter.hh"
+#include "ConditionsService/inc/CrvParams.hh"
+#include "ConditionsService/inc/ConditionsHandle.hh"
 #include "CosmicRayShieldGeom/inc/CosmicRayShield.hh"
 #include "DetectorSolenoidGeom/inc/DetectorSolenoid.hh"
 #include "EventDisplay/src/Cube.h"
@@ -25,13 +27,13 @@ using namespace std;
 #include "GeometryService/inc/GeomHandle.hh"
 #include "GeometryService/inc/DetectorSystem.hh"
 #include "HepPID/ParticleName.hh"
-#include "MCDataProducts/inc/PhysicalVolumeInfoCollection.hh"
 #include "MCDataProducts/inc/PhysicalVolumeInfoMultiCollection.hh"
 #include "MCDataProducts/inc/MCTrajectoryCollection.hh"
 #include "MCDataProducts/inc/SimParticlePtrCollection.hh"
 #include "MCDataProducts/inc/StepPointMCCollection.hh"
 #include "Mu2eUtilities/inc/PhysicalVolumeMultiHelper.hh"
 #include "ConfigTools/inc/SimpleConfig.hh"
+#include "RecoDataProducts/inc/CrvDigiCollection.hh"
 #include "RecoDataProducts/inc/CaloCrystalHitCollection.hh"
 #include "RecoDataProducts/inc/CaloHitCollection.hh"
 #include "RecoDataProducts/inc/StrawHitCollection.hh"
@@ -1086,6 +1088,59 @@ void DataInterface::fillEvent(boost::shared_ptr<ContentSelector> const &contentS
     }
   }
 
+//CRV waveforms
+  for(std::map<int,boost::shared_ptr<Cube> >::iterator crvbar=_crvscintillatorbars.begin(); crvbar!=_crvscintillatorbars.end(); crvbar++)
+  {
+    crvbar->second->getComponentInfo()->getHistVector().clear();
+  }
+
+  mu2e::ConditionsHandle<mu2e::CrvParams> crvPar("ignored");
+  double digitizationPeriod = crvPar->digitizationPeriod;
+  double recoPulsePedestal  = crvPar->pedestal;
+
+//  std::vector<art::Handle<mu2e::CrvDigiCollection> > crvDigisVector;
+//  _event->getManyByType(crvDigisVector);
+  const std::vector<art::Handle<mu2e::CrvDigiCollection> > &crvDigisVector = contentSelector->getSelectedCrvDigiCollection();
+  for(size_t i=0; i<crvDigisVector.size(); i++)
+  {
+    const art::Handle<mu2e::CrvDigiCollection> &crvDigis = crvDigisVector[i];
+    std::string moduleLabel = crvDigis.provenance()->moduleLabel();
+    for(size_t j=0; j<crvDigis->size(); j++)
+    {
+      mu2e::CrvDigi const& digi(crvDigis->at(j));
+      int index = digi.GetScintillatorBarIndex().asInt();
+      int sipm  = digi.GetSiPMNumber();
+      std::string multigraphName = Form("Waveform (%s) SiPM %i",moduleLabel.c_str(),sipm);
+      std::map<int,boost::shared_ptr<Cube> >::iterator crvbar=_crvscintillatorbars.find(index);
+      if(crvbar!=_crvscintillatorbars.end())
+      {
+        //each digi collection and each SiPM gets its own multigraph
+        bool newMultigraph=true;
+        int multigraphIndex=0;
+        std::vector<boost::shared_ptr<TObject> > &v=crvbar->second->getComponentInfo()->getHistVector();
+        for(size_t k=0; k<v.size(); k++)
+        {
+          //check whether multigraph exists already for this module label and SiPM
+          if(multigraphName.compare(v[k]->GetName())==0) {newMultigraph=false; multigraphIndex=k; break;}
+        }
+        if(newMultigraph)
+        {
+          boost::shared_ptr<TMultiGraph> waveform(new TMultiGraph(multigraphName.c_str(),multigraphName.c_str()));
+          v.push_back(boost::dynamic_pointer_cast<TObject>(waveform));
+          multigraphIndex=v.size()-1;
+        }
+
+        TGraph *graph = new TGraph(mu2e::CrvDigi::NSamples);
+        graph->SetMarkerStyle(20);
+        graph->SetMarkerSize(2);
+        for(size_t k=0; k<mu2e::CrvDigi::NSamples; k++)
+        { 
+          graph->SetPoint(k,(digi.GetStartTDC()+k)*digitizationPeriod,digi.GetADCs()[k]);
+        }
+        boost::dynamic_pointer_cast<TMultiGraph>(v[multigraphIndex])->Add(graph,"p");
+      }
+    }
+  }
 
 //CRV reco pulses
   const mu2e::CrvRecoPulseCollection *crvRecoPulses=contentSelector->getSelectedCrvHitCollection<mu2e::CrvRecoPulseCollection>();
@@ -1103,30 +1158,57 @@ void DataInterface::fillEvent(boost::shared_ptr<ContentSelector> const &contentS
       if(crvbar!=_crvscintillatorbars.end() && !std::isnan(time))
       {
         double previousStartTime=crvbar->second->getStartTime();
+        if(std::isnan(previousStartTime)) _crvhits.push_back(crvbar->second);  //first reco hit of this counter
+
+        if(std::isnan(previousStartTime) || time<previousStartTime) crvbar->second->setStartTime(time);
+
         if(std::isnan(previousStartTime))
         {
           findBoundaryT(_hitsTimeMinmax, time);  //is it Ok to exclude all following hits from the time window?
-          crvbar->second->setStartTime(time);
           crvbar->second->getComponentInfo()->setText(3,"Reco pulse SiPM0 PEs/time: ");
           crvbar->second->getComponentInfo()->setText(4,"Reco pulse SiPM1 PEs/time: ");
           crvbar->second->getComponentInfo()->setText(5,"Reco pulse SiPM2 PEs/time: ");
           crvbar->second->getComponentInfo()->setText(6,"Reco pulse SiPM3 PEs/time: ");
-          _crvhits.push_back(crvbar->second);
         }
-        crvbar->second->getComponentInfo()->expandLine(sipm+3,Form("%i/%gns",PEs,time/CLHEP::ns));
+        crvbar->second->getComponentInfo()->expandLine(sipm+3,Form("%iPEs/%.1fns",PEs,time/CLHEP::ns));
+
+        //each digi collection and each SiPM gets its own multigraph
+        std::vector<boost::shared_ptr<TObject> > &v=crvbar->second->getComponentInfo()->getHistVector();
+        for(size_t k=0; k<v.size(); k++)
+        {
+          //check whether this multigraph is for the current SiPM
+          const char *multigraphName = v[k]->GetName();
+          int nameLength = strlen(multigraphName);
+          if(nameLength<1) continue;
+          if(atoi(multigraphName+nameLength-1)==sipm)
+          {
+            double fitParam0 = recoPulse.GetPulseHeight()*TMath::E();
+            double fitParam1 = recoPulse.GetPulseTime();
+            double fitParam2 = recoPulse.GetPulseBeta();
+
+            double tF1=fitParam1 - 2.5*fitParam2;
+            double tF2=fitParam1 + 2.5*fitParam2;
+            int nF=(tF2-tF1)/1.0 + 1;
+            TGraph *graph = new TGraph(nF);
+            for(int iF=0; iF<nF; iF++)
+            {
+              double t   = tF1 + iF*1.0;
+              double ADC = fitParam0*TMath::Exp(-(t-fitParam1)/fitParam2-TMath::Exp(-(t-fitParam1)/fitParam2));
+              if(isnan(ADC)) ADC=0;
+              ADC += recoPulsePedestal;
+              graph->SetPoint(iF,t,ADC);
+            }
+            graph->SetLineWidth(2);
+            graph->SetLineColor(2);
+            boost::dynamic_pointer_cast<TMultiGraph>(v[k])->Add(graph,"l");
+          }
+        }
       }
     }
   }
 
 
-  unsigned int physicalVolumeEntries=0;
-  const mu2e::PhysicalVolumeInfoCollection *physicalVolumes=contentSelector->getPhysicalVolumeInfoCollection();
   const mu2e::PhysicalVolumeInfoMultiCollection *physicalVolumesMulti=contentSelector->getPhysicalVolumeInfoMultiCollection();
-  if(physicalVolumes!=nullptr)
-  {
-    physicalVolumeEntries=physicalVolumes->size();
-  }
-
 
   resetBoundaryP(_tracksMinmax);
   std::vector<ContentSelector::trackInfoStruct> trackInfos;
@@ -1149,14 +1231,7 @@ void DataInterface::fillEvent(boost::shared_ptr<ContentSelector> const &contentS
       std::string particlename=HepPID::particleName(particle.pdgId());
       std::string startVolumeName="unknown volume";
       std::string endVolumeName="unknown volume";
-      if(physicalVolumes!=nullptr)
-      {
-        unsigned int startVolume=particle.startVolumeIndex();
-        unsigned int endVolume  =particle.endVolumeIndex();
-        if(startVolume<physicalVolumeEntries && startVolume>=0) startVolumeName=physicalVolumes->at(startVolume).name();
-        if(endVolume<physicalVolumeEntries && endVolume>=0) endVolumeName=physicalVolumes->at(endVolume).name();
-      }
-      else if(physicalVolumesMulti!=nullptr)
+      if(physicalVolumesMulti!=nullptr)
       {
         mu2e::PhysicalVolumeMultiHelper volumeMultiHelper(*physicalVolumesMulti);
         startVolumeName=volumeMultiHelper.startVolume(particle).name();

@@ -1,13 +1,27 @@
 // Andrei Gaponenko, 2013
 
+#include <utility>
+
+#include "CLHEP/Vector/LorentzVector.h"
+#include "CLHEP/Vector/ThreeVector.h"
+#include "MCDataProducts/inc/ProcessCode.hh"
+#include "cetlib/map_vector.h"
+
 #include "Mu2eUtilities/inc/SimParticleCollectionPrinter.hh"
 
 namespace mu2e {
   //================================================================
-  SimParticleCollectionPrinter::SimParticleCollectionPrinter(const fhicl::ParameterSet& pset)
-    : prefix_(pset.get<std::string>("prefix", ""))
-    , enabled_(pset.get<bool>("enabled", true))
-    , primariesOnly_(pset.get<bool>("primariesOnly", false))
+  SimParticleCollectionPrinter::SimParticleCollectionPrinter(const Config& conf)
+    : prefix_(conf.prefix())
+    , enabled_(conf.enabled())
+    , primariesOnly_(conf.primariesOnly())
+  {}
+
+  //================================================================
+  SimParticleCollectionPrinter::SimParticleCollectionPrinter()
+    : prefix_("")
+    , enabled_(false)
+    , primariesOnly_(false)
   {}
 
   //================================================================
@@ -42,13 +56,6 @@ namespace mu2e {
     }
 
     return os;
-  }
-
-  //================================================================
-  fhicl::ParameterSet SimParticleCollectionPrinter::defaultPSet() {
-    fhicl::ParameterSet res;
-    res.put<bool>("enabled", false);
-    return res;
   }
 
   //================================================================

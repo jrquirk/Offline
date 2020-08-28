@@ -38,6 +38,5 @@ EMFCAnalysis
 .tup
 .buildopts
 tags
-Mu2eG4/geom/STM
-.gitignore
-Mu2eG4/fcl/gdmldump.fcl
+.clangd/*
+compile_commands.json

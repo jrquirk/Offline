@@ -59,10 +59,8 @@ physics : {
    }
 
    producers: {
-      generate: {
-         module_type          : EventGenerator
-         inputfile            : "JobConfig/beam/genconfig_PrimaryProtons.txt"
-      }
+
+      generate: @local::PrimaryProtonGun
 
       genCounter: {
          module_type: GenEventCounter
@@ -77,7 +75,6 @@ physics : {
          visualization: @local::mu2eg4NoVisualization
 
          generatorModuleLabel: generate
-         MultiStageParameters: {} // this is the first stage
 
          SDConfig: {
             enableSD: [ virtualdetector ] // activate just the explicitly listed SDs
@@ -124,11 +121,9 @@ physics : {
    filters: {
       tgtStopFilter: {
          module_type: FilterG4Out
-         noInstanceName : true
          mainHitInputs: []
          extraHitInputs: [ "g4run:virtualdetector" ]
          mainSPPtrInputs: [ "stoppedMuonFinder" ]
-         numSimParticleCollections: 1
       }
 
       g4consistent: {
@@ -169,5 +164,5 @@ services.message.destinations.log.categories.ArtReport.limit : 1
 services.message.destinations.log.categories.ArtReport.timespan : 300
 
 // Initialze seeding of random engines: do not put these lines in base .fcl files for grid jobs.
-services.SeedService.baseSeed         :  0
+services.SeedService.baseSeed         :  8
 services.SeedService.maxUniqueEngines :  20

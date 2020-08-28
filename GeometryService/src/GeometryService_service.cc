@@ -85,6 +85,7 @@
 #include "GeometryService/inc/Mu2eEnvelope.hh"
 #include "ExtinctionMonitorFNAL/Geometry/inc/ExtMonFNALMuonID.hh"
 #include "GeometryService/inc/ExtMonFNALMuonIDMaker.hh"
+#include "ConfigTools/inc/ConfigFileLookupPolicy.hh"
 
 using namespace std;
 
@@ -98,6 +99,7 @@ namespace mu2e {
     _messageOnDefault(     pset.get<bool>        ("messageOnDefault",     false)),
     _configStatsVerbosity( pset.get<int>         ("configStatsVerbosity", 0)),
     _printConfig(          pset.get<bool>        ("printConfig",          false)),
+    _printTopLevel(        pset.get<bool>        ("printConfigTopLevel",  false)),
     _config(nullptr),
     _pset   (pset),
     standardMu2eDetector_( _pset.get<std::string>("simulatedDetector.tool_type") == "Mu2e"),
@@ -155,6 +157,31 @@ namespace mu2e {
 
     _config->printOpen(cout,"Geometry");
 
+    if(_printTopLevel) {
+      //print the top level geometry file contents
+      //the top level often contains a single named config file or a list of specific version files
+      ConfigFileLookupPolicy configFile;
+      std::string file = configFile(_inputfile);
+      std::ifstream in(file.c_str());
+      if ( !in ) {
+	// No conf file for this test.
+	throw cet::exception("Geom")
+	  << "GeometryService: Cannot open input file: "
+	  << file
+	  << endl;
+      }
+      std::cout << "GeometryService: printing top level geometry file:\n";
+      std::string line;
+      while ( in ){
+	std::getline(in,line);
+	if ( !in ){
+	  break;
+	}
+
+	std::cout << line.c_str() << std::endl;
+      }
+      std::cout << "GeometryService: finished printing top level geometry file.\n";
+    }
     // Print final state of file after all substitutions.
     if ( _printConfig      ){ _config->print(cout, "Geom: ");       }
 
@@ -204,7 +231,22 @@ namespace mu2e {
 
     addDetector(PSVacuumMaker::make(*_config, ps, pse, vacPS_TS_z));
 
-    addDetector(PSShieldMaker::make(*_config, ps.psEndRefPoint(), prodTarget.position()));
+    //addDetector(PSShieldMaker::make(*_config, ps.psEndRefPoint(), prodTarget.position()));
+
+   if (_config->getString("targetPS_model") == "MDC2018"){ 
+     //      std::cout << "adding Tier1 in GeometryService" << std::endl;
+      addDetector(PSShieldMaker::make(*_config, ps.psEndRefPoint(), prodTarget.position()));
+	} else 
+      if (_config->getString("targetPS_model") == "Hayman_v_2_0"){ 
+	//	std::cout << " adding Hayman in GeometryService" << std::endl;
+	addDetector(PSShieldMaker::make(*_config, ps.psEndRefPoint(), prodTarget.haymanProdTargetPosition()));
+	  } else 
+	{throw cet::exception("GEOM") << " " << __func__ << " illegal production target version specified in GeometryService_service = " << _config->getString("targetPS_model")  << std::endl;}
+
+
+
+
+
 
     // Construct building solids
     std::unique_ptr<Mu2eHall> tmphall(Mu2eHallMaker::makeBuilding(*_g4GeomOptions,*_config));
@@ -215,6 +257,7 @@ namespace mu2e {
 
     // Make dirt based on Mu2e envelope
     Mu2eHallMaker::makeDirt( *tmphall.get(), *_g4GeomOptions, *_config, *mu2eEnv.get() );
+    Mu2eHallMaker::makeTrapDirt( *tmphall.get(), *_g4GeomOptions, *_config, *mu2eEnv.get() );
 
     addDetector(std::move( tmphall ) );
     addDetector(std::move( mu2eEnv ) );
