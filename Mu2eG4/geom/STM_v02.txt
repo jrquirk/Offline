@@ -54,7 +54,7 @@ double vd.STMShieldOut.r=160;
 //DEPRECATED: Absorber in the MBS endplug hole. This causes too much brem photons for the STM (too high rate)
 //bool   mbs.CLV2.absorber.build          = true;
 //string mbs.CLV2.absorber.MaterialName   = "Polyethylene096";  
-//double mbs.CLV2.absorber.halfLength     = 15.0;//mm
+//double mbs.CLV2.absorber.halfLength     = 15.0;//mm // Should be 2cm long?
 
 //Build STM within z = 34 inches (863.6 mm) of downstream hall wall
 double stm.z.allowed = 901.7;//863.6;
