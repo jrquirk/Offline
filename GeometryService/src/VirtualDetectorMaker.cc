@@ -15,11 +15,14 @@
 // Mu2e includes
 #include "GeometryService/inc/VirtualDetectorMaker.hh"
 #include "GeometryService/inc/VirtualDetector.hh"
+#include "MBSGeom/inc/MBS.hh"
 #include "ConfigTools/inc/SimpleConfig.hh"
 #include "CosmicRayShieldGeom/inc/CosmicRayShield.hh"
 #include "GeometryService/inc/GeomHandle.hh"
 #include "GeometryService/inc/GeometryService.hh"
 #include "GeometryService/inc/Mu2eEnvelope.hh"
+#include "GeomPrimitives/inc/Tube.hh"
+#include "GeomPrimitives/inc/Polycone.hh"
 #include "ProtonBeamDumpGeom/inc/ProtonBeamDump.hh"
 #include "BeamlineGeom/inc/Beamline.hh"
 #include "BeamlineGeom/inc/Collimator_TS1.hh"
@@ -76,7 +79,7 @@ namespace mu2e {
       double zDiff = bg->getTS().getColl1().collarMarginZ();
 
 
-      Hep3Vector deltaZ1(0,0,coll1HL-vdHL);  
+      Hep3Vector deltaZ1(0,0,coll1HL-vdHL);
       Hep3Vector deltaZ1Collar(0,0,coll1HL - vdHL - zDiff);
       Hep3Vector deltaZ0Collar(0,0,coll1HL - coll1ColLen - zDiff + vdHL);
 
@@ -660,10 +663,10 @@ namespace mu2e {
           }
         }
 
-				///wang add aditional VD(112) in STM, before FOV(100) and VD STMSSCollUpStr(101)  
+				///wang add aditional VD(112) in STM, before FOV(100) and VD STMSSCollUpStr(101)
         if ( c.getBool("vd.STMMid.build", false) ) {
           const double mstmZAllowed =  c.getDouble("stm.z.allowed");
-          const double mstmCollHalfLength =  c.getDouble("stm.SScollimator.halfLength");    
+          const double mstmCollHalfLength =  c.getDouble("stm.SScollimator.halfLength");
 					double vdxshift=c.getDouble("vd.STMMid.xshift",0.0);
 					double vdyshift=c.getDouble("vd.STMMid.yshift",0.0);
 					double vdzshift=c.getDouble("vd.STMMid.zshift",-2100.0);
@@ -684,15 +687,15 @@ namespace mu2e {
             cout << "               at local=" << vd->getLocal(VirtualDetectorId::STM_Middle) << " global="<< vd->getGlobal(VirtualDetectorId::STM_Middle) <<endl;
           }
         }
-				///wang add aditional VD(115) in STM, before FOV(100) and VD STMSSCollUpStr(101)  
+				///wang add aditional VD(115) in STM, before FOV(100) and VD STMSSCollUpStr(101)
         if ( c.getBool("vd.STMFin.build", false) ) {
           const double mstmZAllowed =  c.getDouble("stm.z.allowed");
-          const double mstmCollHalfLength =  c.getDouble("stm.SScollimator.halfLength");    
+          const double mstmCollHalfLength =  c.getDouble("stm.SScollimator.halfLength");
 					double vdxshift=c.getDouble("vd.STMFin.xshift",0.0);
 					double vdyshift=c.getDouble("vd.STMFin.yshift",0.0);
 					double vdzshift=c.getDouble("vd.STMFin.zshift",-2100.0);
           CLHEP::Hep3Vector mstmCollPositionInParent = mstmReferencePositionInParent + CLHEP::Hep3Vector(0.0,0.0,2.0*mstmMotherHalfLength) - CLHEP::Hep3Vector(0.0,0.0,mstmZAllowed) + CLHEP::Hep3Vector(0.0,0.0,mstmCollHalfLength);
-					
+
 					CLHEP::Hep3Vector vdPositionWRTparent     = mstmCollPositionInParent + CLHEP::Hep3Vector(vdxshift,vdyshift,-mstmCollHalfLength+vdzshift);//2.1m upstream of spot-size collimator//wyq
 					vd->addVirtualDetector(VirtualDetectorId::STM_Final, //ID
 							parentPositionInMu2e, //reference positin
@@ -703,10 +706,35 @@ namespace mu2e {
             cout << "               at local=" << vd->getLocal(VirtualDetectorId::STM_Final) << " global="<< vd->getGlobal(VirtualDetectorId::STM_Middle) <<endl;
           }
         }
+        ///jrquirk add VD116 upstream of the end of the MBS
+        if ( c.getBool("vd.MBSPreEnd.build", false) ) {
+          VirtualDetectorId::enum_type id = VirtualDetectorId::MBS_PreEnd;
+          GeomHandle<MBS> mbs;
+          const Polycone& mbsm = *(mbs->getMBSMPtr());
+          const Polycone& clv2 = *(mbs->getCLV2Ptr());
+          // const Polycone& bsbs = *(mbs->getBSBSPtr());
+          double xshift = c.getDouble("vd.MBSPreEnd.xshift", 0.0);
+          double yshift = c.getDouble("vd.MBSPreEnd.yshift", 0.0);
+          double zshift = c.getDouble("vd.MBSPreEnd.zshift", -77.2);
+          CLHEP::Hep3Vector vdPosInMu2e   = clv2.originInMu2e();
+          vdPosInMu2e += CLHEP::Hep3Vector(xshift, yshift, zshift);
+          CLHEP::Hep3Vector parentPosInMu2e = mbsm.originInMu2e();
+          CLHEP::Hep3Vector vdPosInParent   = vdPosInMu2e - parentPosInMu2e;
+
+          vd->addVirtualDetector(id, // ID, 116
+              parentPosInMu2e,       //reference position
+              0x0,                   //rotation
+              vdPosInParent);        //placement w.r.t. reference
+          if ( verbosityLevel > 0) {
+            cout << " Constructing " << VirtualDetector::volumeName(id) << endl;
+            cout << "               at local=" << vd->getLocal(id)
+                 << " global="<< vd->getGlobal(id) <<endl;
+          }
+        }
 //position of VD relative to FOV
-//				double _pipeDnStrHalfLength       = c.getDouble("stm.pipe.DnStrHalfLength");
-				double _magnetHalfLength          = c.getDouble("stm.magnet.halfLength");
-				double _magnetUpStrSpace          = c.getDouble("stm.magnet.UpStrSpace");
+//         double _pipeDnStrHalfLength       = c.getDouble("stm.pipe.DnStrHalfLength");
+        double _magnetHalfLength           = c.getDouble("stm.magnet.halfLength");
+				double _magnetUpStrSpace           = c.getDouble("stm.magnet.UpStrSpace");
 				double _shieldDnStrSpace           = c.getDouble("stm.shield.DnStrSpace");
 				double _shieldDnStrWallHalfLength  = c.getDouble("stm.shield.DnStrWall.halfLength");
 				double _shieldPipeHalfLength       = c.getDouble("stm.shield.pipe.halfLength");

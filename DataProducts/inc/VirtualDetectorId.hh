@@ -82,9 +82,10 @@ namespace mu2e {
       TS2_Bend, TS4_Bend, // 98, 99: Virtual detectors requested by Mau for testing magnetic field effects - in the bends of TS
       STM_FieldOfViewCollDnStr, STM_SpotSizeCollUpStr, // 100,101: inside STM area
       EMC_FEB_0_SurfIn, EMC_FEB_0_SurfOut, EMC_FEB_1_SurfIn, EMC_FEB_1_SurfOut,// 102,103,104,105
-      EMC_FEB_0_EdgeIn, EMC_FEB_0_EdgeOut, EMC_FEB_1_EdgeIn, EMC_FEB_1_EdgeOut,// 106,107,108,109      
+      EMC_FEB_0_EdgeIn, EMC_FEB_0_EdgeOut, EMC_FEB_1_EdgeIn, EMC_FEB_1_EdgeOut,// 106,107,108,109
       Coll1_pBarCollar_In, Coll1_pBarCollar_Out, // 110, 111, Requested by Bob Bernstein for pbar studies.  Immediately upstream of the TS1 pBar Collar, and immediately downstream of VD 2, but with radius equal to the Coll1 inner radius
-			STM_Middle,STM_Shield_In,STM_Shield_Out,STM_Final,//112 for a middle simulation in STM
+			STM_Middle,STM_Shield_In,STM_Shield_Out,STM_Final,// 112,113,114,115 for a middle simulation in STM
+      MBS_PreEnd, // 116, right before end of MBS (in front of CLV2)
       lastEnum
     };
 
@@ -133,7 +134,8 @@ namespace mu2e {
       "EMC_FEB_0_SurfIn", "EMC_FEB_0_SurfOut","EMC_FEB_1_SurfIn", "EMC_FEB_1_SurfOut", \
       "EMC_FEB_0_EdgeIn", "EMC_FEB_0_EdgeOut","EMC_FEB_1_EdgeIn", "EMC_FEB_1_EdgeOut", \
       "Coll1_pBarCollar_In", "Coll1_pBarCollar_Out",\
-			"STM_Middle","STM_Shield_In","STM_Shield_Out","STM_Final"
+			"STM_Middle", "STM_Shield_In", "STM_Shield_Out", "STM_Final", \
+      "MBS_PreEnd"
 
   public:
 
