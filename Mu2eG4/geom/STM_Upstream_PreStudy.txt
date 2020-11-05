@@ -1,0 +1,139 @@
+// (Muon) Stoping Target Monitor (STM)
+// STM_Study_Upstream consists of 3 geometries:
+// 1. No sweeper magnet, no sweeper magnetic field (use DSExtension),
+//    poly absorber (2cm thick) is upstream of Ti IFB vacuum window
+// 2. Sweeper magnet and it's magnetic field are present,
+//    the field vis DSExtensionSweeper, *not* stm.magnet.field,
+//    poly absorber is 2mm upstream of Ti IFB vacuum window
+// 3. No sweeper magnet, no sweeper magnetic field (use DSExtension),
+//    poly absorber is downstream of Ti IFB window (remove upstream
+//    absorber and make Ti IFB poly cap 2cm thicker)
+
+// Include the standard geometry, which includes STM_v04.txt,
+// which itself includes STM_v03.txt.
+#include "Mu2eG4/geom/geom_common_current.txt"
+// Overwrite Offline HEAD STM parameters with Yaqian's
+// STM_v02.txt
+#include "Mu2eG4/geom/STM_v02.txt"
+
+//** Copnstant throughout the study **//
+bool   stm.FOVcollimator.absorber.build      = false;
+double stm.FOVcollimator.absorber.halfLength = 50.0;
+double ifb.endwindow.halfLength              = 0.0762;
+string ifb.endwindow.material                = "Ti6Al4V";
+bool   stm.IFBWindowLinerDn.build            = true;    //Poly downstream of Ti.
+
+bool   vd.STMShieldIn.build  = false;
+bool   vd.STMShieldOut.build = false;
+
+bool   stm.absorber.build       = false; ////wyq
+string stm.absorber.material    = "Polyethylene096";
+double stm.absorber.DnStrSpace  = 2000.0;
+double stm.absorber.halfWidth   =  215.9;
+double stm.absorber.halfHeight  =  228.6;
+double stm.absorber.halfLength  =  110;
+
+// Virtual detectors
+bool   vd.STMUpStr.build                = false;
+bool   vd.STMMagDnStr.build             = false;
+bool   vd.STMSSCollUpStr.build          = false;
+bool   vd.STMCollDnStr.build            = false;
+bool   vd.STMDet1UpStr.build            = false;
+bool   vd.STMDet2UpStr.build            = false;
+bool   vd.STMFieldOfViewCollDnStr.build = false;
+bool   vd.DSNeutronShieldExit.build     = false;
+bool   vd.STMMid.build                  = false;
+
+bool   vd.STMFin.build   = true;
+double vd.STMFin.r       = 2000.;
+
+// Debugging
+int vd.verbosityLevel     = 10;
+int bfield.verbosityLevel =  0;
+
+// Magnetic field
+vector<string> bfield.outerMaps = {
+  "BFieldMaps/Mau9/ExtMonUCIInternal1AreaMap.header",
+  "BFieldMaps/Mau9/ExtMonUCIInternal2AreaMap.header",
+  "BFieldMaps/Mau9/ExtMonUCIAreaMap.header",
+  "BFieldMaps/Mau13/PSAreaMap.header",
+  "BFieldMaps/Mau13/WorldMap.header"
+};
+double stm.magnet.field          = 0.0;
+double stm.magnet.fieldx         = 0.0;
+double stm.magnet.fieldy         = 0.0;
+double stm.magnet.fieldz         = 0.0;
+bool   stm.magnet.fieldVisible   = false;
+
+//** Pre Study **//
+// Should be active for all studies.
+bool   vd.STMMid.build     = false;
+bool   vd.MBSPreEnd.build  = true;
+double vd.MBSPreEnd.r      = 250.;
+double vd.MBSPreEnd.xshift = 0.;
+double vd.MBSPreEnd.yshift = 0.;
+double vd.MBSPreEnd.zshift = -77.2; // Should put this in the code, determine CLV2 edge
+
+
+//** Study 1 **//
+//set magnet+shield material so it's effectively off
+//string stm.magnet.material             = "G4_AIR";
+//string stm.shield.materialLiner        = "G4_AIR";
+//string stm.shield.material             = "G4_AIR";
+//bool   stm.IFBWindowLinerUp.build      = true; // Poly upstream of the Ti
+//double stm.IFBWindowLinerUp.halflength = 10.;  // 2cm upstream
+//double stm.IFBWindowLinerDn.halflength = 3.;   // 6mm endcap, protect Ti window
+//
+//vector<string> bfield.innerMaps = {
+//  "BFieldMaps/Mau13/DSMap.header",
+//  "BFieldMaps/Mau13/PSMap.header",
+//  "BFieldMaps/Mau13/TSuMap_fix.header",
+//  "BFieldMaps/Mau13/TSdMap.header",
+//  "BFieldMaps/Mau13/PStoDumpAreaMap.header",
+//  "BFieldMaps/Mau13/ProtonDumpAreaMap.header",
+//  "BFieldMaps/Mau13/DSExtension.header"
+//};
+
+
+//** Study 2 **//
+//string stm.magnet.material             = "G4_Fe";
+//string stm.shield.materialLiner        = "G4_AIR";
+//string stm.shield.material             = "G4_AIR";
+//bool   stm.IFBWindowLinerUp.build      = true; // Poly upstream of the Ti
+//double stm.IFBWindowLinerUp.halflength = 10.;  // 2cm upstream
+//double stm.IFBWindowLinerDn.halflength = 3.;   // 6mm endcap, protect Ti window
+//
+//vector<string> bfield.innerMaps = {
+//  "BFieldMaps/Mau13/DSMap.header",
+//  "BFieldMaps/Mau13/PSMap.header",
+//  "BFieldMaps/Mau13/TSuMap_fix.header",
+//  "BFieldMaps/Mau13/TSdMap.header",
+//  "BFieldMaps/Mau13/PStoDumpAreaMap.header",
+//  "BFieldMaps/Mau13/ProtonDumpAreaMap.header",
+//  "BFieldMaps/Mau13/DSExtensionSweeper.header"
+//};
+
+
+//** Study 3 **//
+//string stm.magnet.material             = "G4_AIR";
+//string stm.shield.materialLiner        = "G4_AIR";
+//string stm.shield.material             = "G4_AIR";
+//bool   stm.IFBWindowLinerUp.build      = false; // Poly upstream of the Ti
+//double stm.IFBWindowLinerUp.halflength = 10.;   // 2cm upstream
+//double stm.IFBWindowLinerUp.halflength = 13.;   // 6mm endcap, protect Ti window
+//
+//vector<string> bfield.innerMaps = {
+//  "BFieldMaps/Mau13/DSMap.header",
+//  "BFieldMaps/Mau13/PSMap.header",
+//  "BFieldMaps/Mau13/TSuMap_fix.header",
+//  "BFieldMaps/Mau13/TSdMap.header",
+//  "BFieldMaps/Mau13/PStoDumpAreaMap.header",
+//  "BFieldMaps/Mau13/ProtonDumpAreaMap.header",
+//  "BFieldMaps/Mau13/DSExtension.header"
+//};
+
+
+// This tells emacs to view this file in c++ mode.
+// Local Variables:
+// mode:c++
+// End:
