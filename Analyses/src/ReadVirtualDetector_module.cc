@@ -221,7 +221,7 @@ namespace mu2e {
 
   ReadVirtualDetector::ReadVirtualDetector(fhicl::ParameterSet const& pset) :
     art::EDAnalyzer(pset),
-    _toff(pset.get<fhicl::ParameterSet>("TimeOffsets")),
+    _toff(pset.get<fhicl::ParameterSet>("TimeOffsets", fhicl::ParameterSet())),
     _nAnalyzed(0),
     _maxPrint(pset.get<int>("maxPrint",0)),
     _debugout(pset.get<int>("debugOutput",0)),
@@ -412,7 +412,8 @@ namespace mu2e {
   void ReadVirtualDetector::analyze(const art::Event& event) {
 
     ++_nAnalyzed;
-    _toff.updateMap(event);
+    // if (!_toff.is_empty())
+      _toff.updateMap(event);
 
     // Access virtual detectors geometry information
     // If not virtual detectors are defined, skip the rest
@@ -634,6 +635,7 @@ namespace mu2e {
 	    ntext[24] = origin.x();
 	    ntext[25] = origin.y();
 	    ntext[26] = origin.z();
+      // ntext[27] = _toff.is_empty() ? 0. : _toff.totalTimeOffset(hit);
       ntext[27] = _toff.totalTimeOffset(hit);
 	    if (write_ntvdext){
 	      _ntvdext->Fill(ntext);
