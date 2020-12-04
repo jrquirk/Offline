@@ -55,6 +55,9 @@ double vd.STMFin.r                      = 2000.;
 // Debugging
 int vd.verbosityLevel     = 10;
 int bfield.verbosityLevel =  0;
+int stm.verbosityLevel    = 10;
+int ds.verbosityLevel     = 10;
+int mbs.verbosityLevel    = 10;
 
 // Magnetic field
 vector<string> bfield.outerMaps = {
@@ -80,8 +83,8 @@ double vd.MBSPreEnd.yshift = 0.;
 double vd.MBSPreEnd.zshift = -77.2; // Should put this in the code, determine CLV2 edge
 
 
-//** Study 2 **//
-string stm.magnet.material             = "G4_Fe";
+//** Study 1 **//
+string stm.magnet.material             = "G4_AIR";
 string stm.shield.materialLiner        = "G4_AIR";
 string stm.shield.material             = "G4_AIR";
 bool   mbs.CLV2.absorber.build         = true; // Poly upstream of the Ti
@@ -95,12 +98,12 @@ vector<string> bfield.innerMaps = {
   "BFieldMaps/Mau13/TSdMap.header",
   "BFieldMaps/Mau13/PStoDumpAreaMap.header",
   "BFieldMaps/Mau13/ProtonDumpAreaMap.header",
-  "BFieldMaps/Mau13/DSSweepExtension.header"
+  "BFieldMaps/Mau13/DSExtension.header"
 };
 
 
 
-// Added
+// Added for FOV
 bool   stm.FOVcollimator.absorber.build      = true;
 double stm.FOVcollimator.absorber.halfLength = 50.0;
 

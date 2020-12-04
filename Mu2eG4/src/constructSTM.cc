@@ -86,68 +86,68 @@ namespace mu2e {
     const auto geomOptions = art::ServiceHandle<GeometryService>()->geomOptions();
     geomOptions->loadEntry( _config, "stm", "stm");
 
-    const bool STMisVisible        = geomOptions->isVisible("stm");
-    const bool STMisSolid          = geomOptions->isSolid("stm");
-    const bool forceAuxEdgeVisible = geomOptions->forceAuxEdgeVisible("stm");
-    const bool doSurfaceCheck      = geomOptions->doSurfaceCheck("stm");
-    const bool placePV             = geomOptions->placePV("stm");
-    int  const verbosityLevel      = _config.getInt("stm.verbosityLevel", 0);
-    const double stmZAllowed=_config.getDouble("stm.z.allowed");
+    const bool   STMisVisible        = geomOptions->isVisible("stm");
+    const bool   STMisSolid          = geomOptions->isSolid("stm");
+    const bool   forceAuxEdgeVisible = geomOptions->forceAuxEdgeVisible("stm");
+    const bool   doSurfaceCheck      = geomOptions->doSurfaceCheck("stm");
+    const bool   placePV             = geomOptions->placePV("stm");
+    const int    verbosityLevel      = _config.getInt("stm.verbosityLevel", 0);
+    const double stmZAllowed         = _config.getDouble("stm.z.allowed");
     const G4ThreeVector zeroVector(0.,0.,0.);
-		const double stmSSCollxshift=_config.getDouble("stm.SScollimator.xshift");
-		const double stmSSCollyshift=_config.getDouble("stm.SScollimator.yshift");
-		const int stmSSCollShape=_config.getInt("stm.SScollimator.shape",1);
-G4ThreeVector stmSSCollShift(stmSSCollxshift,stmSSCollyshift,0.0);
-//Read in parameters from configuration
-const double STMShield_Ttop_Poly=_config.getDouble("STMShield_Ttop_Poly");
-const double STMShield_Ttop_Pb1=_config.getDouble("STMShield_Ttop_Pb1");
-const double STMShield_Ttop_Pb2=_config.getDouble("STMShield_Ttop_Pb2");
-const double STMShield_Ttop_Cu=_config.getDouble("STMShield_Ttop_Cu");
-const double STMShield_Ttop_Al=_config.getDouble("STMShield_Ttop_Al");
-const double STMShield_Tbot_Al=_config.getDouble("STMShield_Tbot_Al");
-const double STMShield_Ttop_Ycrack=_config.getDouble("STMShield_Ttop_Ycrack",0.0);
-const double STMShield_X1=_config.getDouble("STMShield_X1");
-const double STMShield_X2=_config.getDouble("STMShield_X2");
-const double STMShield_Y1=_config.getDouble("STMShield_Y1");
-const double STMShield_Zgap=_config.getDouble("STMShield_Zgap");
-const double STMDet2HPGe_Can_R=_config.getDouble("STMDet2HPGe_Can_R");
-const double STMDet2HPGe_Can_thick=_config.getDouble("STMDet2HPGe_Can_thick");
-const double STMDet2HPGe_Can_halfL=_config.getDouble("STMDet2HPGe_Can_halfL");
-const double STMDet2HPGe_Can_gap_top=_config.getDouble("STMDet2HPGe_Can_gap_top");
-const double STMDet2HPGe_Cup0_gap_bar=_config.getDouble("STMDet2HPGe_Cup0_gap_bar");
-const double STMDet2HPGe_Cup0_gap_bot=_config.getDouble("STMDet2HPGe_Cup0_gap_bot");
-const double STMDet2HPGe_Cup0_thick_bar=_config.getDouble("STMDet2HPGe_Cup0_thick_bar");
-const double STMDet2HPGe_Cup0_thick_top=_config.getDouble("STMDet2HPGe_Cup0_thick_top");
-const double STMDet2HPGe_Cup0_thick_bot=_config.getDouble("STMDet2HPGe_Cup0_thick_bot");
-const double STMDet2HPGe_R_out_corner=_config.getDouble("STMDet2HPGe_R_out_corner");
-const double STMDet2HPGe_R_out=_config.getDouble("STMDet2HPGe_R_out");
-const double STMDet2HPGe_L_out=_config.getDouble("STMDet2HPGe_L_out");
-const double STMDet2HPGe_R_in_corner=_config.getDouble("STMDet2HPGe_R_in_corner");
-const double STMDet2HPGe_R_in=_config.getDouble("STMDet2HPGe_R_in");
-const double STMDet2HPGe_L_in=_config.getDouble("STMDet2HPGe_L_in");
-const double STMDet2HPGe_xOffset=_config.getDouble("STMDet2HPGe_xOffset");
-//>LaBr3
-const double STMShield_LaBr3_halfWidth=_config.getDouble("STMShield_LaBr3_halfWidth");
-const double STMShield_LaBr3_halfT_Al=_config.getDouble("STMShield_LaBr3_halfT_Al");
-const double STMShield_LaBr3_gap_Al=_config.getDouble("STMShield_LaBr3_gap_Al");
-const double STMShield_LaBr3_gap_Pb=_config.getDouble("STMShield_LaBr3_gap_Pb");
-const double STMShield_LaBr3_halfT_Cu=_config.getDouble("STMShield_LaBr3_halfT_Cu");
-const double STMShield_LaBr3_halfT_Pb=_config.getDouble("STMShield_LaBr3_halfT_Pb");
-const double STMShield_LaBr3_Hole_R=_config.getDouble("STMShield_LaBr3_Hole_R");
-//Shield btw. HPGe and LaBr3
-const double STMShield_halfLengthI=_config.getDouble("STMShield_halfLengthI");
-const double STMShield_halfTI_Pb=_config.getDouble("STMShield_halfTI_Pb");
-const double STMShield_halfTI_Al=_config.getDouble("STMShield_halfTI_Al");
-const double STMShield_halfTI_Cu=_config.getDouble("STMShield_halfTI_Cu");
-//Parameters for Det1(LaBr3) and Det2(HPGe)
-const double STMDet1CupLaBr3_R=_config.getDouble("STMDet1CupLaBr3_R");
-const double STMDet1CupLaBr3_thick=_config.getDouble("STMDet1CupLaBr3_thick");
-const double STMDet1CupLaBr3_halfLength=_config.getDouble("STMDet1CupLaBr3_halfLength");
-const double STMDet1CupLaBr3_Upstream=_config.getDouble("STMDet1CupLaBr3_Upstream");
-const double STMDet1LaBr3_R=_config.getDouble("STMDet1LaBr3_R");
-const double STMDet1LaBr3_halfLength=_config.getDouble("STMDet1LaBr3_halfLength");
-const double STMDet1LaBr3_gap_Upstream=_config.getDouble("STMDet1LaBr3_gap_Upstream");
-const double STMDet1LaBr3_xOffset=_config.getDouble("STMDet1LaBr3_xOffset");
+    const double stmSSCollxshift=_config.getDouble("stm.SScollimator.xshift");
+    const double stmSSCollyshift=_config.getDouble("stm.SScollimator.yshift");
+    const int stmSSCollShape=_config.getInt("stm.SScollimator.shape",1);
+    G4ThreeVector stmSSCollShift(stmSSCollxshift,stmSSCollyshift,0.0);
+    //Read in parameters from configuration
+    const double STMShield_Ttop_Poly=_config.getDouble("STMShield_Ttop_Poly");
+    const double STMShield_Ttop_Pb1=_config.getDouble("STMShield_Ttop_Pb1");
+    const double STMShield_Ttop_Pb2=_config.getDouble("STMShield_Ttop_Pb2");
+    const double STMShield_Ttop_Cu=_config.getDouble("STMShield_Ttop_Cu");
+    const double STMShield_Ttop_Al=_config.getDouble("STMShield_Ttop_Al");
+    const double STMShield_Tbot_Al=_config.getDouble("STMShield_Tbot_Al");
+    const double STMShield_Ttop_Ycrack=_config.getDouble("STMShield_Ttop_Ycrack",0.0);
+    const double STMShield_X1=_config.getDouble("STMShield_X1");
+    const double STMShield_X2=_config.getDouble("STMShield_X2");
+    const double STMShield_Y1=_config.getDouble("STMShield_Y1");
+    const double STMShield_Zgap=_config.getDouble("STMShield_Zgap");
+    const double STMDet2HPGe_Can_R=_config.getDouble("STMDet2HPGe_Can_R");
+    const double STMDet2HPGe_Can_thick=_config.getDouble("STMDet2HPGe_Can_thick");
+    const double STMDet2HPGe_Can_halfL=_config.getDouble("STMDet2HPGe_Can_halfL");
+    const double STMDet2HPGe_Can_gap_top=_config.getDouble("STMDet2HPGe_Can_gap_top");
+    const double STMDet2HPGe_Cup0_gap_bar=_config.getDouble("STMDet2HPGe_Cup0_gap_bar");
+    const double STMDet2HPGe_Cup0_gap_bot=_config.getDouble("STMDet2HPGe_Cup0_gap_bot");
+    const double STMDet2HPGe_Cup0_thick_bar=_config.getDouble("STMDet2HPGe_Cup0_thick_bar");
+    const double STMDet2HPGe_Cup0_thick_top=_config.getDouble("STMDet2HPGe_Cup0_thick_top");
+    const double STMDet2HPGe_Cup0_thick_bot=_config.getDouble("STMDet2HPGe_Cup0_thick_bot");
+    const double STMDet2HPGe_R_out_corner=_config.getDouble("STMDet2HPGe_R_out_corner");
+    const double STMDet2HPGe_R_out=_config.getDouble("STMDet2HPGe_R_out");
+    const double STMDet2HPGe_L_out=_config.getDouble("STMDet2HPGe_L_out");
+    const double STMDet2HPGe_R_in_corner=_config.getDouble("STMDet2HPGe_R_in_corner");
+    const double STMDet2HPGe_R_in=_config.getDouble("STMDet2HPGe_R_in");
+    const double STMDet2HPGe_L_in=_config.getDouble("STMDet2HPGe_L_in");
+    const double STMDet2HPGe_xOffset=_config.getDouble("STMDet2HPGe_xOffset");
+    //>LaBr3
+    const double STMShield_LaBr3_halfWidth=_config.getDouble("STMShield_LaBr3_halfWidth");
+    const double STMShield_LaBr3_halfT_Al=_config.getDouble("STMShield_LaBr3_halfT_Al");
+    const double STMShield_LaBr3_gap_Al=_config.getDouble("STMShield_LaBr3_gap_Al");
+    const double STMShield_LaBr3_gap_Pb=_config.getDouble("STMShield_LaBr3_gap_Pb");
+    const double STMShield_LaBr3_halfT_Cu=_config.getDouble("STMShield_LaBr3_halfT_Cu");
+    const double STMShield_LaBr3_halfT_Pb=_config.getDouble("STMShield_LaBr3_halfT_Pb");
+    const double STMShield_LaBr3_Hole_R=_config.getDouble("STMShield_LaBr3_Hole_R");
+    //Shield btw. HPGe and LaBr3
+    const double STMShield_halfLengthI=_config.getDouble("STMShield_halfLengthI");
+    const double STMShield_halfTI_Pb=_config.getDouble("STMShield_halfTI_Pb");
+    const double STMShield_halfTI_Al=_config.getDouble("STMShield_halfTI_Al");
+    const double STMShield_halfTI_Cu=_config.getDouble("STMShield_halfTI_Cu");
+    //Parameters for Det1(LaBr3) and Det2(HPGe)
+    const double STMDet1CupLaBr3_R=_config.getDouble("STMDet1CupLaBr3_R");
+    const double STMDet1CupLaBr3_thick=_config.getDouble("STMDet1CupLaBr3_thick");
+    const double STMDet1CupLaBr3_halfLength=_config.getDouble("STMDet1CupLaBr3_halfLength");
+    const double STMDet1CupLaBr3_Upstream=_config.getDouble("STMDet1CupLaBr3_Upstream");
+    const double STMDet1LaBr3_R=_config.getDouble("STMDet1LaBr3_R");
+    const double STMDet1LaBr3_halfLength=_config.getDouble("STMDet1LaBr3_halfLength");
+    const double STMDet1LaBr3_gap_Upstream=_config.getDouble("STMDet1LaBr3_gap_Upstream");
+    const double STMDet1LaBr3_xOffset=_config.getDouble("STMDet1LaBr3_xOffset");
 
 double STMShield_Z1=stmZAllowed-pSTMSSCollimatorParams.halfLength()*2.0;//901.7;
 double STMShield_Z2=STMShield_Z1-STMShield_Zgap-(STMShield_Tbot_Al+2*STMShield_Ttop_Poly+STMShield_Ttop_Pb2+STMShield_Ttop_Cu);
@@ -157,7 +157,7 @@ double STMShield_thick_front=2*STMShield_Ttop_Poly+STMShield_Ttop_Pb2+STMShield_
 double STMShield_thick_bot=2*STMShield_Ttop_Poly+2*STMShield_Ttop_Pb2+STMShield_Ttop_Cu+STMShield_Tbot_Al;
 double STMShield_Ttop_CenterX=(STMShield_X2+STMShield_X1)/4.0-STMShield_X1/2.0;//dis from center to straight side
     if ( verbosityLevel > 0) {
-       cout << __func__ << " STM verbosityLevel    : " << verbosityLevel  << endl;
+        cout << __func__ << " STM verbosityLevel    : " << verbosityLevel  << endl;
     }
 
     // Access to the G4HelperService.
@@ -399,8 +399,8 @@ double STMShield_Ttop_CenterX=(STMShield_X2+STMShield_X1)/4.0-STMShield_X1/2.0;/
     //std::cout<<"vdSTM_UpStrPositionWRTpipe = "<<vdDSNeutronShieldExitPositionWRTpipeUpStr<<std::endl;
     G4SubtractionSolid *pipeUpStrTubTemp2 = new G4SubtractionSolid("pipeUpStrTubTemp2",pipeUpStrTubTemp1, aDiskVDDSNeutronShieldExitTub,      0, vdDSNeutronShieldExitPositionWRTpipeUpStr);
     G4SubtractionSolid *pipeUpStrTubTemp3 = new G4SubtractionSolid("pipeUpStrTubTemp3",pipeUpStrTubTemp2, aDiskVDSTM_UpStrTub,      0, vdSTM_UpStrPositionWRTpipeUpStr);
-		//>Yaqian Wang insert Poly Up and Dnstream of IFB Window
-		double rSTMIFBLiner=_config.getDouble("ifb.endwindow.rOut");
+    //>Yaqian Wang insert Poly Up and Dnstream of IFB Window
+    double rSTMIFBLiner=_config.getDouble("ifb.endwindow.rOut");
     // G4Tubs *tubIFBLinerUp = new G4Tubs("tubIFBLinerUp", 0.0, rSTMIFBLiner, _config.getDouble("stm.FOVcollimator.absorber.halfLength"), 0.0, CLHEP::twopi );
     // G4Tubs *tubIFBLinerDn = new G4Tubs("tubIFBLinerDn", 0.0, rSTMIFBLiner, _config.getDouble("stm.FOVcollimator.absorber.halfLength"), 0.0, CLHEP::twopi );
     G4Tubs *tubIFBLinerUp = new G4Tubs("tubIFBLinerUp", 0.0, rSTMIFBLiner, _config.getDouble("stm.IFBWindowLinerUp.halfLength"), 0.0, CLHEP::twopi );
@@ -443,6 +443,11 @@ if(_config.getBool("stm.IFBWindowLinerUp.build",false)){
        placePV,
        doSurfaceCheck
        );
+    if (verbosityLevel > 0) {
+        std::cout << STMIFBLinerUp.name << " position:\t"
+                  << ifbParentInfo.centerInMu2e()+STMIFBLinerUpPositionInParent
+                  << std::endl;
+    }
 }
 if(_config.getBool("stm.IFBWindowLinerDn.build",false)){
     // G4ThreeVector posInParent =
@@ -486,6 +491,11 @@ if(_config.getBool("stm.IFBWindowLinerDn.build",false)){
        placePV,
        doSurfaceCheck
        );
+    if (verbosityLevel > 0) {
+        std::cout << STMIFBLinerDn.name << " position:\t"
+                  << ifbParentInfo.centerInMu2e()+STMIFBLinerDnPositionInParent
+                  << std::endl;
+    }
 }
 
 
