@@ -80,7 +80,6 @@ double vd.MBSPreEnd.yshift = 0.;
 double vd.MBSPreEnd.zshift = -77.2; // Should put this in the code, determine CLV2 edge
 
 
-//** Study 2 **//
 string stm.magnet.material             = "G4_Fe";
 string stm.shield.materialLiner        = "G4_AIR";
 string stm.shield.material             = "G4_AIR";

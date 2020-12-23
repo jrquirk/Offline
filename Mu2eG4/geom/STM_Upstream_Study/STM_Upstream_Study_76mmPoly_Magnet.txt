@@ -55,6 +55,9 @@ double vd.STMFin.r                      = 2000.;
 // Debugging
 int vd.verbosityLevel     = 10;
 int bfield.verbosityLevel =  0;
+int stm.verbosityLevel    = 10;
+int ds.verbosityLevel     = 10;
+int mbs.verbosityLevel    = 10;
 
 // Magnetic field
 vector<string> bfield.outerMaps = {
@@ -80,70 +83,11 @@ double vd.MBSPreEnd.yshift = 0.;
 double vd.MBSPreEnd.zshift = -77.2; // Should put this in the code, determine CLV2 edge
 
 
-//** Study 1 **//
-//set magnet+shield material so it's effectively off
-string stm.magnet.material             = "G4_AIR";
-string stm.shield.materialLiner        = "G4_AIR";
-string stm.shield.material             = "G4_AIR";
-bool   mbs.CLV2.absorber.build         = true; // Poly upstream of the Ti
-double mbs.CLV2.absorber.halfLength    = 10.;  // 2cm upstream
-double stm.IFBWindowLinerDn.halfLength = 3.;   // 6mm endcap, protect Ti window
-
-vector<string> bfield.innerMaps = {
-  "BFieldMaps/Mau13/DSMap.header",
-  "BFieldMaps/Mau13/PSMap.header",
-  "BFieldMaps/Mau13/TSuMap_fix.header",
-  "BFieldMaps/Mau13/TSdMap.header",
-  "BFieldMaps/Mau13/PStoDumpAreaMap.header",
-  "BFieldMaps/Mau13/ProtonDumpAreaMap.header",
-  "BFieldMaps/Mau13/DSExtension.header"
-};
-
-
-//** Study 2 **//
-//string stm.magnet.material             = "G4_Fe";
-//string stm.shield.materialLiner        = "G4_AIR";
-//string stm.shield.material             = "G4_AIR";
-//bool   mbs.CLV2.absorber.build         = true; // Poly upstream of the Ti
-//double mbs.CLV2.absorber.halfLength    = 10.;  // 2cm upstream
-//double stm.IFBWindowLinerDn.halfLength = 3.;   // 6mm endcap, protect Ti window
-//
-//vector<string> bfield.innerMaps = {
-//  "BFieldMaps/Mau13/DSMap.header",
-//  "BFieldMaps/Mau13/PSMap.header",
-//  "BFieldMaps/Mau13/TSuMap_fix.header",
-//  "BFieldMaps/Mau13/TSdMap.header",
-//  "BFieldMaps/Mau13/PStoDumpAreaMap.header",
-//  "BFieldMaps/Mau13/ProtonDumpAreaMap.header",
-//  "BFieldMaps/Mau13/DSSweepExtension.header"
-//};
-
-
-//** Study 3 **//
-//string stm.magnet.material             = "G4_AIR";
-//string stm.shield.materialLiner        = "G4_AIR";
-//string stm.shield.material             = "G4_AIR";
-//bool   mbs.CLV2.absorber.build         = false;    // Poly upstream of the Ti
-//double mbs.CLV2.absorber.halfLength    = 10.;       // 2cm upstream
-//double stm.IFBWindowLinerDn.halfLength = 13.;      // 6mm endcap, protect Ti window
-//
-//vector<string> bfield.innerMaps = {
-//  "BFieldMaps/Mau13/DSMap.header",
-//  "BFieldMaps/Mau13/PSMap.header",
-//  "BFieldMaps/Mau13/TSuMap_fix.header",
-//  "BFieldMaps/Mau13/TSdMap.header",
-//  "BFieldMaps/Mau13/PStoDumpAreaMap.header",
-//  "BFieldMaps/Mau13/ProtonDumpAreaMap.header",
-//  "BFieldMaps/Mau13/DSExtension.header"
-//};
-
-
-//** Study 9 **//
 string stm.magnet.material             = "G4_Fe";
 string stm.shield.materialLiner        = "G4_AIR";
 string stm.shield.material             = "G4_AIR";
 bool   mbs.CLV2.absorber.build         = true; // Poly upstream of the Ti
-double mbs.CLV2.absorber.halfLength    = 10.;  // 2cm upstream
+double mbs.CLV2.absorber.halflength    = 10.;  // 2cm upstream
 double stm.IFBWindowLinerDn.halfLength = 3.;   // 6mm endcap, protect Ti window
 
 vector<string> bfield.innerMaps = {
@@ -153,14 +97,14 @@ vector<string> bfield.innerMaps = {
   "BFieldMaps/Mau13/TSdMap.header",
   "BFieldMaps/Mau13/PStoDumpAreaMap.header",
   "BFieldMaps/Mau13/ProtonDumpAreaMap.header",
-  "BFieldMaps/Mau13/DSExtension.header"
+  "BFieldMaps/Mau13/DSSweepExtension.header"
 };
 
-double stm.magnet.field          = 0.050;  // Tesla (0 Gauss)
-double stm.magnet.fieldx         = 0.050;  // Tesla (0 Gauss)
-double stm.magnet.fieldy         = 0.0;
-double stm.magnet.fieldz         = 0.0;
-bool   stm.magnet.fieldVisible   = false;
+
+
+// Added for FOV
+bool   stm.FOVcollimator.absorber.build      = true;
+double stm.FOVcollimator.absorber.halfLength = 25.0;
 
 // This tells emacs to view this file in c++ mode.
 // Local Variables:

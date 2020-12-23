@@ -83,12 +83,11 @@ double vd.MBSPreEnd.yshift = 0.;
 double vd.MBSPreEnd.zshift = -77.2; // Should put this in the code, determine CLV2 edge
 
 
-//** Study 1 **//
 string stm.magnet.material             = "G4_AIR";
 string stm.shield.materialLiner        = "G4_AIR";
 string stm.shield.material             = "G4_AIR";
 bool   mbs.CLV2.absorber.build         = true; // Poly upstream of the Ti
-double mbs.CLV2.absorber.halfLength    = 10.;  // 2cm upstream
+double mbs.CLV2.absorber.halflength    = 10.;  // 2cm upstream
 double stm.IFBWindowLinerDn.halfLength = 3.;   // 6mm endcap, protect Ti window
 
 vector<string> bfield.innerMaps = {

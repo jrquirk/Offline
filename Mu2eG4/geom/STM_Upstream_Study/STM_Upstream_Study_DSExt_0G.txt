@@ -1,0 +1,26 @@
+#include "Mu2eG4/geom/STM_Upstream_Study/STM_Upstream_Study_1.txt"
+
+string stm.magnet.material     = "G4_AIR";
+
+double stm.magnet.field        = 0.0;
+double stm.magnet.fieldx       = 0.0;
+double stm.magnet.fieldy       = 0.0;
+double stm.magnet.fieldz       = 0.0;
+bool   stm.magnet.fieldVisible = false;
+
+vector<string> bfield.innerMaps = {
+  "BFieldMaps/Mau13/DSMap.header",
+  "BFieldMaps/Mau13/PSMap.header",
+  "BFieldMaps/Mau13/TSuMap_fix.header",
+  "BFieldMaps/Mau13/TSdMap.header",
+  "BFieldMaps/Mau13/PStoDumpAreaMap.header",
+  "BFieldMaps/Mau13/ProtonDumpAreaMap.header",
+  "BFieldMaps/Mau13/DSExtension.header"
+};
+
+double vd.STMFin.zshift = -20000.;
+
+// This tells emacs to view this file in c++ mode.
+// Local Variables:
+// mode:c++
+// End:
